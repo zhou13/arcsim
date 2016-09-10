@@ -68,7 +68,7 @@ OBJ := \
 	util.o \
 	vectors.o
 
-.PHONY: all debug release tags clean
+.PHONY: all debug release clean
 
 release:
 
@@ -102,8 +102,7 @@ build/dep/%.d: src/%.cpp
 -include $(addprefix build/dep/,$(OBJ:.o=.d))
 
 ctags:
-	cd src; ctags -w *.?pp
-	cd src; etags *.?pp
+	cd src; ctags -R
 
 clean:
 	rm -rf bin/* build/debug/* build/release/*

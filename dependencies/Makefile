@@ -17,7 +17,8 @@ lib/libjson.a:
 lib/libtaucs.a:
 	cd taucs && ./configure module=\!METIS && $(MAKE)
 	mkdir -p include/ lib/
-	cp taucs/build/*/*.h taucs/src/*.h include/
+	cp taucs/build/linux/*.h include/
+	cp taucs/src/*.h include/
 	cp taucs/lib/*/libtaucs.a lib/
 
 clean: clean-subdirs

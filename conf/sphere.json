@@ -7,7 +7,6 @@
     "cloths": [{
         "mesh": "meshes/square4.obj",
         "transform": {"translate": [-0.5, -1, 0.5]},
-        // "transform": {"translate": [0.5, 0, 0.5]},
         "materials": [{"data": "materials/gray-interlock.json",
                        "thicken": 2}],
         "remeshing": {

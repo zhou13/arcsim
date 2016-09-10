@@ -32,24 +32,10 @@ AOUTFLG   =
 RANLIB    = ranlib
 RM        = rm -rf
 
-# These are for a Pentium4 version of ATLAS (not bundled with taucs)
-#LIBBLAS   = -L /home/stoledo/Public/Linux_P4SSE2/lib -lf77blas -lcblas -latlas \
-#            -L /usr/lib/gcc-lib/i386-redhat-linux/2.96 -lg2c
-#LIBLAPACK = -L /home/stoledo/Public/Linux_P4SSE2/lib -llapack
-
-LIBBLAS   = -L/usr/lib64/atlas -L/usr/lib64/atlas-sse3 -lf77blas -lcblas -latlas
+LIBBLAS   = -lblas
 LIBLAPACK = -llapack
 
 LIBMETIS  = -lmetis
 
 LIBF77 = -lgfortran
 LIBC   = -lm 
-
-#########################################################
-
-
-
-
-
-
-
