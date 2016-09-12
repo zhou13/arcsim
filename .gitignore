@@ -1,17 +1,4 @@
 /bin
 tags
-dependencies/alglib/cpp/src/*.o
 dependencies/include/
-dependencies/jsoncpp/bin/
-dependencies/jsoncpp/buildscons/
-dependencies/jsoncpp/dist/
-dependencies/jsoncpp/libs/
-dependencies/jsoncpp/scons-tools/*.pyc
 dependencies/lib/
-dependencies/taucs/bin/
-dependencies/taucs/build/
-dependencies/taucs/configurator/configurator
-dependencies/taucs/lib/
-dependencies/taucs/makefile
-dependencies/taucs/obj/
-dependencies/alglib/cpp/src/*.a
