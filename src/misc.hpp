@@ -31,15 +31,15 @@
 #include <vector>
 
 // Converts Shewchuck's triangle output (.node/.ele) to a .obj
-void tri2obj (const std::vector<std::string> &args);
+void tri2obj(const std::vector<std::string>& args);
 
 // Combines two meshes into a single obj
-void merge_meshes (const std::vector<std::string> &args);
+void merge_meshes(const std::vector<std::string>& args);
 
 // Does the opposite of merge_meshes
-void split_meshes (const std::vector<std::string> &args);
+void split_meshes(const std::vector<std::string>& args);
 
 // This function can exist anywhere and the linker will find it
-void debug (const std::vector<std::string> &args);
+void debug(const std::vector<std::string>& args);
 
 #endif

@@ -30,42 +30,50 @@
 #include <omp.h>
 using namespace std;
 
-void collect_leaves (BVHNode *node, map<const Face*,BVHNode*> &leaves);
+void collect_leaves(BVHNode* node, map<const Face*, BVHNode*>& leaves);
 
-AccelStruct::AccelStruct (const Mesh &mesh, bool ccd):
-    tree((Mesh&)mesh, ccd), root(tree._root), leaves() {
+AccelStruct::AccelStruct(const Mesh& mesh, bool ccd)
+    : tree((Mesh&)mesh, ccd)
+    , root(tree._root)
+    , leaves()
+{
     if (root)
         collect_leaves(root, leaves);
 }
 
-void collect_leaves (BVHNode *node, map<const Face*,BVHNode*> &leaves) {
+void collect_leaves(BVHNode* node, map<const Face*, BVHNode*>& leaves)
+{
     if (node->isLeaf()) {
-    	leaves[node->getFace()] = node;
+        leaves[node->getFace()] = node;
     } else {
         collect_leaves(node->getLeftChild(), leaves);
         collect_leaves(node->getRightChild(), leaves);
     }
 }
 
-void update_accel_struct (AccelStruct &acc) {
+void update_accel_struct(AccelStruct& acc)
+{
     if (acc.root)
         acc.tree.refit();
 }
 
-void mark_descendants (BVHNode *node, bool active);
-void mark_ancestors (BVHNode *node, bool active);
+void mark_descendants(BVHNode* node, bool active);
+void mark_ancestors(BVHNode* node, bool active);
 
-void mark_all_inactive (AccelStruct &acc) {
+void mark_all_inactive(AccelStruct& acc)
+{
     if (acc.root)
         mark_descendants(acc.root, false);
 }
 
-void mark_active (AccelStruct &acc, const Face *face) {
+void mark_active(AccelStruct& acc, const Face* face)
+{
     if (acc.root)
         mark_ancestors(acc.leaves[face], true);
 }
 
-void mark_descendants (BVHNode *node, bool active) {
+void mark_descendants(BVHNode* node, bool active)
+{
     node->_active = active;
     if (!node->isLeaf()) {
         mark_descendants(node->_left, active);
@@ -73,24 +81,27 @@ void mark_descendants (BVHNode *node, bool active) {
     }
 }
 
-void mark_ancestors (BVHNode *node, bool active) {
+void mark_ancestors(BVHNode* node, bool active)
+{
     node->_active = active;
     if (!node->isRoot())
         mark_ancestors(node->_parent, active);
 }
 
-void for_overlapping_faces (BVHNode *node, float thickness,
-                            BVHCallback callback) {
-	if (node->isLeaf() || !node->_active)
-		return;
-	for_overlapping_faces(node->getLeftChild(), thickness, callback);
-	for_overlapping_faces(node->getRightChild(), thickness, callback);
-	for_overlapping_faces(node->getLeftChild(), node->getRightChild(),
-                          thickness, callback);
+void for_overlapping_faces(BVHNode* node, float thickness,
+    BVHCallback callback)
+{
+    if (node->isLeaf() || !node->_active)
+        return;
+    for_overlapping_faces(node->getLeftChild(), thickness, callback);
+    for_overlapping_faces(node->getRightChild(), thickness, callback);
+    for_overlapping_faces(node->getLeftChild(), node->getRightChild(),
+        thickness, callback);
 }
 
-void for_overlapping_faces (BVHNode *node0, BVHNode *node1, float thickness,
-                            BVHCallback callback) {
+void for_overlapping_faces(BVHNode* node0, BVHNode* node1, float thickness,
+    BVHCallback callback)
+{
     if (!node0->_active && !node1->_active)
         return;
     if (!overlap(node0->_box, node1->_box, thickness))
@@ -100,21 +111,22 @@ void for_overlapping_faces (BVHNode *node0, BVHNode *node1, float thickness,
              *face1 = node1->getFace();
         callback(face0, face1);
     } else if (node0->isLeaf()) {
-        for_overlapping_faces(node0, node1->getLeftChild(), thickness,callback);
-        for_overlapping_faces(node0, node1->getRightChild(),thickness,callback);
+        for_overlapping_faces(node0, node1->getLeftChild(), thickness, callback);
+        for_overlapping_faces(node0, node1->getRightChild(), thickness, callback);
     } else {
-        for_overlapping_faces(node0->getLeftChild(), node1, thickness,callback);
-        for_overlapping_faces(node0->getRightChild(), node1,thickness,callback);
+        for_overlapping_faces(node0->getLeftChild(), node1, thickness, callback);
+        for_overlapping_faces(node0->getRightChild(), node1, thickness, callback);
     }
 }
 
-vector<BVHNode*> collect_upper_nodes (const vector<AccelStruct*> &accs, int n);
+vector<BVHNode*> collect_upper_nodes(const vector<AccelStruct*>& accs, int n);
 
-void for_overlapping_faces (const vector<AccelStruct*> &accs,
-                            const vector<AccelStruct*> &obs_accs,
-                            double thickness, BVHCallback callback,
-                            bool parallel, bool only_obs) {
-    int nnodes = (int)ceil(sqrt(2*omp_get_max_threads()));
+void for_overlapping_faces(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs,
+    double thickness, BVHCallback callback,
+    bool parallel, bool only_obs)
+{
+    int nnodes = (int)ceil(sqrt(2 * omp_get_max_threads()));
     vector<BVHNode*> nodes = collect_upper_nodes(accs, nnodes);
     int nthreads = omp_get_max_threads();
     omp_set_num_threads(parallel ? omp_get_max_threads() : 1);
@@ -128,15 +140,16 @@ void for_overlapping_faces (const vector<AccelStruct*> &accs,
         for (int o = 0; o < (int)obs_accs.size(); o++)
             if (obs_accs[o]->root)
                 for_overlapping_faces(nodes[n], obs_accs[o]->root, thickness,
-                                      callback);
+                    callback);
     }
     omp_set_num_threads(nthreads);
 }
 
-void for_faces_overlapping_obstacles (const vector<AccelStruct*> &accs,
-                                      const vector<AccelStruct*> &obs_accs,
-                                      double thickness, BVHCallback callback,
-                                      bool parallel) {
+void for_faces_overlapping_obstacles(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs,
+    double thickness, BVHCallback callback,
+    bool parallel)
+{
     int nnodes = omp_get_max_threads();
     vector<BVHNode*> nodes = collect_upper_nodes(accs, nnodes);
     int nthreads = omp_get_max_threads();
@@ -146,12 +159,13 @@ void for_faces_overlapping_obstacles (const vector<AccelStruct*> &accs,
         for (int o = 0; o < (int)obs_accs.size(); o++)
             if (obs_accs[o]->root)
                 for_overlapping_faces(nodes[n], obs_accs[o]->root, thickness,
-                                      callback);
+                    callback);
     omp_set_num_threads(nthreads);
 }
 
-vector<BVHNode*> collect_upper_nodes (const vector<AccelStruct*> &accs,
-                                      int nnodes) {
+vector<BVHNode*> collect_upper_nodes(const vector<AccelStruct*>& accs,
+    int nnodes)
+{
     vector<BVHNode*> nodes;
     for (int a = 0; a < (int)accs.size(); a++)
         if (accs[a]->root)
@@ -172,8 +186,9 @@ vector<BVHNode*> collect_upper_nodes (const vector<AccelStruct*> &accs,
     return nodes;
 }
 
-vector<AccelStruct*> create_accel_structs (const vector<Mesh*> &meshes,
-                                           bool ccd) {
+vector<AccelStruct*> create_accel_structs(const vector<Mesh*>& meshes,
+    bool ccd)
+{
     vector<AccelStruct*> accs;
     for (int m = 0; m < (int)meshes.size(); m++)
         if (!meshes[m]->proxy)
@@ -181,10 +196,11 @@ vector<AccelStruct*> create_accel_structs (const vector<Mesh*> &meshes,
     return accs;
 }
 
-void destroy_accel_structs (vector<AccelStruct*> &accs) {
+void destroy_accel_structs(vector<AccelStruct*>& accs)
+{
     for (int a = 0; a < (int)accs.size(); a++)
         if (accs[a])
             delete accs[a];
 }
 
-const vector<Mesh*> *meshes, *obs_meshes;
+const vector<Mesh *> *meshes, *obs_meshes;

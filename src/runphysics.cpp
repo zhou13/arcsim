@@ -46,41 +46,45 @@ Simulation sim;
 int frame;
 Timer fps;
 
-void copy_file (const string &input, const string &output);
+void copy_file(const string& input, const string& output);
 
-void init_physics (const string &json_file, string outprefix,
-                   bool is_reloading) {
+void init_physics(const string& json_file, string outprefix,
+    bool is_reloading)
+{
     load_json(json_file, sim);
     ::outprefix = outprefix;
     if (!outprefix.empty()) {
         ::timingfile.open(stringf("%s/timing", outprefix.c_str()).c_str(),
-                          is_reloading ? ios::out|ios::app : ios::out);
+            is_reloading ? ios::out | ios::app : ios::out);
         // Make a copy of the config file for future use
-        copy_file(json_file.c_str(), stringf("%s/conf.json",outprefix.c_str()));
+        copy_file(json_file.c_str(), stringf("%s/conf.json", outprefix.c_str()));
         // And copy over all the obstacles
         vector<Mesh*> base_meshes(sim.obstacles.size());
         for (int o = 0; o < (int)sim.obstacles.size(); o++)
             base_meshes[o] = &sim.obstacles[o].base_mesh;
         save_objs(base_meshes, stringf("%s/obs", outprefix.c_str()));
     }
-    prepare(sim);    
+    prepare(sim);
 }
 
-void init_relax() {
-	separate_obstacles(sim.obstacle_meshes, sim.cloth_meshes);
-    relax_initial_state(sim);    
+void init_relax()
+{
+    separate_obstacles(sim.obstacle_meshes, sim.cloth_meshes);
+    relax_initial_state(sim);
 }
 
-static void save (vector<Mesh*> &meshes, int frame) {
+static void save(vector<Mesh*>& meshes, int frame)
+{
     if (!outprefix.empty() && frame < 100000)
         save_state(sim, stringf("%s/%05d", outprefix.c_str(), frame));
 }
 
-static void save_timings () {
+static void save_timings()
+{
     static double old_totals[Simulation::nModules] = {};
     if (!::timingfile)
         return; // printing timing data to stdout is getting annoying
-    ostream &out = ::timingfile ? ::timingfile : cout;
+    ostream& out = ::timingfile ? ::timingfile : cout;
     for (int i = 0; i < Simulation::nModules; i++) {
         out << sim.timers[i].total - old_totals[i] << " ";
         old_totals[i] = sim.timers[i].total;
@@ -88,11 +92,13 @@ static void save_timings () {
     out << endl;
 }
 
-void save (Simulation &sim, int frame) {
+void save(Simulation& sim, int frame)
+{
     save(sim.cloth_meshes, frame);
 }
 
-void sim_step() {
+void sim_step()
+{
     fps.tick();
     advance_step(sim);
     if ((sim.step % sim.frame_steps == 0) && (sim.step % sim.save_every) == 0) {
@@ -104,12 +110,14 @@ void sim_step() {
         exit(EXIT_SUCCESS);
 }
 
-void offline_loop() {
+void offline_loop()
+{
     while (true)
         sim_step();
 }
 
-void run_physics (const vector<string> &args) {
+void run_physics(const vector<string>& args)
+{
     if (args.size() != 1 && args.size() != 2) {
         cout << "Runs the simulation in batch mode." << endl;
         cout << "Arguments:" << endl;
@@ -119,7 +127,7 @@ void run_physics (const vector<string> &args) {
         exit(EXIT_FAILURE);
     }
     string json_file = args[0];
-    string outprefix = args.size()>1 ? args[1] : "";
+    string outprefix = args.size() > 1 ? args[1] : "";
     if (!outprefix.empty())
         ensure_existing_directory(outprefix);
     init_physics(json_file, outprefix, false);
@@ -129,7 +137,8 @@ void run_physics (const vector<string> &args) {
     offline_loop();
 }
 
-void init_resume(const vector<string> &args) {
+void init_resume(const vector<string>& args)
+{
     assert(args.size() == 2);
     string outprefix = args[0];
     string start_frame_str = args[1];
@@ -137,17 +146,18 @@ void init_resume(const vector<string> &args) {
     init_physics(stringf("%s/conf.json", outprefix.c_str()), outprefix, true);
     // Get the initialization information
     sim.frame = atoi(start_frame_str.c_str());
-    for (int i=0; i<sim.frame; i++)
-    	sim.time += sim.frame_time;
+    for (int i = 0; i < sim.frame; i++)
+        sim.time += sim.frame_time;
     sim.step = sim.frame * sim.frame_steps;
-    for(int i=0; i<(int)sim.obstacles.size(); ++i)
+    for (int i = 0; i < (int)sim.obstacles.size(); ++i)
         sim.obstacles[i].get_mesh(sim.time);
     prepare(sim); // set cloth meshes etc.
-    load_state(sim, stringf("%s/%05d",outprefix.c_str(),sim.frame));
+    load_state(sim, stringf("%s/%05d", outprefix.c_str(), sim.frame));
     //separate_obstacles(sim.obstacle_meshes, sim.cloth_meshes);
 }
 
-void resume_physics (const vector<string> &args) {
+void resume_physics(const vector<string>& args)
+{
     if (args.size() != 2) {
         cout << "Resumes an incomplete simulation in batch mode." << endl;
         cout << "Arguments:" << endl;
@@ -160,12 +170,13 @@ void resume_physics (const vector<string> &args) {
     offline_loop();
 }
 
-void copy_file (const string &input, const string &output) {
+void copy_file(const string& input, const string& output)
+{
     return;
-    if(input == output) {
+    if (input == output) {
         return;
     }
-    if(boost::filesystem::exists(output)) {
+    if (boost::filesystem::exists(output)) {
         boost::filesystem::remove(output);
     }
     boost::filesystem::copy_file(

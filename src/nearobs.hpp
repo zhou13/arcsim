@@ -27,11 +27,10 @@
 #ifndef NEAROBS_HPP
 #define NEAROBS_HPP
 
-#include "mesh.hpp"
 #include "collisionutil.hpp"
+#include "mesh.hpp"
 #include <map>
 
-std::map<Node*,Plane> nearest_obstacle_planes 
-	(const std::vector<Node*> &nodes, const std::vector<AccelStruct*>& obs_accs);
+std::map<Node*, Plane> nearest_obstacle_planes(const std::vector<Node*>& nodes, const std::vector<AccelStruct*>& obs_accs);
 
 #endif

@@ -29,83 +29,100 @@
 #include "magic.hpp"
 using namespace std;
 
-double EqCon::value (int *sign) {
-    if (sign) *sign = 0;
+double EqCon::value(int* sign)
+{
+    if (sign)
+        *sign = 0;
     return dot(n, node->x - x);
 }
-MeshGrad EqCon::gradient () {MeshGrad grad; grad.push_back(MeshGradV(node,n)); return grad;}
-MeshGrad EqCon::project () {return MeshGrad();}
-double EqCon::energy (double value) {return stiff*sq(value)/2.;}
-double EqCon::energy_grad (double value) {return stiff*value;}
-double EqCon::energy_hess (double value) {return stiff;}
-MeshGrad EqCon::friction (double dt, MeshHess &jac) {return MeshGrad();}
-bool EqCon::contains(Node* _node) { return node == _node; }
-
-double GlueCon::value (int *sign) {
-    if (sign) *sign = 0;
-    return dot(n, nodes[1]->x - nodes[0]->x);
-}
-MeshGrad GlueCon::gradient () {
+MeshGrad EqCon::gradient()
+{
     MeshGrad grad;
-    grad.push_back(MeshGradV(nodes[0],-n));
-    grad.push_back(MeshGradV(nodes[1],n));
+    grad.push_back(MeshGradV(node, n));
     return grad;
 }
-MeshGrad GlueCon::project () {return MeshGrad();}
-double GlueCon::energy (double value) {return stiff*sq(value)/2.;}
-double GlueCon::energy_grad (double value) {return stiff*value;}
-double GlueCon::energy_hess (double value) {return stiff;}
-MeshGrad GlueCon::friction (double dt, MeshHess &jac) {return MeshGrad();}
+MeshGrad EqCon::project() { return MeshGrad(); }
+double EqCon::energy(double value) { return stiff * sq(value) / 2.; }
+double EqCon::energy_grad(double value) { return stiff * value; }
+double EqCon::energy_hess(double value) { return stiff; }
+MeshGrad EqCon::friction(double dt, MeshHess& jac) { return MeshGrad(); }
+bool EqCon::contains(Node* _node) { return node == _node; }
+
+double GlueCon::value(int* sign)
+{
+    if (sign)
+        *sign = 0;
+    return dot(n, nodes[1]->x - nodes[0]->x);
+}
+MeshGrad GlueCon::gradient()
+{
+    MeshGrad grad;
+    grad.push_back(MeshGradV(nodes[0], -n));
+    grad.push_back(MeshGradV(nodes[1], n));
+    return grad;
+}
+MeshGrad GlueCon::project() { return MeshGrad(); }
+double GlueCon::energy(double value) { return stiff * sq(value) / 2.; }
+double GlueCon::energy_grad(double value) { return stiff * value; }
+double GlueCon::energy_hess(double value) { return stiff; }
+MeshGrad GlueCon::friction(double dt, MeshHess& jac) { return MeshGrad(); }
 bool GlueCon::contains(Node* _node) { return nodes[0] == _node || nodes[1] == _node; }
 
-double IneqCon::value (int *sign) {
+double IneqCon::value(int* sign)
+{
     if (sign)
         *sign = 1;
     double d = 0;
     for (int i = 0; i < 4; i++)
         if (nodes[i])
-            d += w[i]*dot(n, nodes[i]->x);
+            d += w[i] * dot(n, nodes[i]->x);
     d -= ::magic.repulsion_thickness;
     return d;
 }
 
-MeshGrad IneqCon::gradient () {
+MeshGrad IneqCon::gradient()
+{
     MeshGrad grad;
     for (int i = 0; i < 4; i++)
         if (nodes[i])
-            grad.push_back(MeshGradV(nodes[i], w[i]*n));
+            grad.push_back(MeshGradV(nodes[i], w[i] * n));
     return grad;
 }
 
-MeshGrad IneqCon::project () {
+MeshGrad IneqCon::project()
+{
     double d = value() + ::magic.repulsion_thickness - ::magic.projection_thickness;
     if (d >= 0)
         return MeshGrad();
     double inv_mass = 0;
     for (int i = 0; i < 4; i++)
         if (nodes[i] && free[i])
-            inv_mass += sq(w[i])/nodes[i]->m;
+            inv_mass += sq(w[i]) / nodes[i]->m;
     MeshGrad dx;
     for (int i = 0; i < 4; i++)
         if (nodes[i] && free[i])
-            dx.push_back(MeshGradV(nodes[i], -(w[i]/nodes[i]->m)/inv_mass*n*d));
+            dx.push_back(MeshGradV(nodes[i], -(w[i] / nodes[i]->m) / inv_mass * n * d));
     return dx;
 }
 
-double violation (double value) {return std::max(-value, 0.);}
+double violation(double value) { return std::max(-value, 0.); }
 
-double IneqCon::energy (double value) {
+double IneqCon::energy(double value)
+{
     double v = violation(value);
-    return stiff*v*v*v/::magic.repulsion_thickness/6;
+    return stiff * v * v * v / ::magic.repulsion_thickness / 6;
 }
-double IneqCon::energy_grad (double value) {
-    return -stiff*sq(violation(value))/::magic.repulsion_thickness/2;
+double IneqCon::energy_grad(double value)
+{
+    return -stiff * sq(violation(value)) / ::magic.repulsion_thickness / 2;
 }
-double IneqCon::energy_hess (double value) {
-    return stiff*violation(value)/::magic.repulsion_thickness;
+double IneqCon::energy_hess(double value)
+{
+    return stiff * violation(value) / ::magic.repulsion_thickness;
 }
 
-MeshGrad IneqCon::friction (double dt, MeshHess &jac) {
+MeshGrad IneqCon::friction(double dt, MeshHess& jac)
+{
     if (mu == 0)
         return MeshGrad();
     double fn = abs(energy_grad(value()));
@@ -115,22 +132,22 @@ MeshGrad IneqCon::friction (double dt, MeshHess &jac) {
     double inv_mass = 0;
     for (int i = 0; i < 4; i++) {
         if (nodes[i]) {
-            v += w[i]*nodes[i]->v;
+            v += w[i] * nodes[i]->v;
             if (free[i])
-                inv_mass += sq(w[i])/nodes[i]->m;
+                inv_mass += sq(w[i]) / nodes[i]->m;
         }
     }
-    Mat3x3 T = Mat3x3(1) - outer(n,n);
-    double vt = norm(T*v);
-    double f_by_v = min(mu*fn/vt, 1/(dt*inv_mass));
+    Mat3x3 T = Mat3x3(1) - outer(n, n);
+    double vt = norm(T * v);
+    double f_by_v = min(mu * fn / vt, 1 / (dt * inv_mass));
     // double f_by_v = mu*fn/max(vt, 1e-1);
     MeshGrad force;
     for (int i = 0; i < 4; i++) {
         if (nodes[i] && free[i]) {
-            force.push_back(MeshGradV(nodes[i], -w[i]*f_by_v*T*v));
+            force.push_back(MeshGradV(nodes[i], -w[i] * f_by_v * T * v));
             for (int j = 0; j < 4; j++) {
                 if (free[j]) {
-                    jac.push_back(MeshHessV(nodes[i], nodes[j], -w[i]*w[j]*f_by_v*T));
+                    jac.push_back(MeshHessV(nodes[i], nodes[j], -w[i] * w[j] * f_by_v * T));
                 }
             }
         }
@@ -138,28 +155,31 @@ MeshGrad IneqCon::friction (double dt, MeshHess &jac) {
     return force;
 }
 
-bool IneqCon::contains(Node *_node) {
-	for (int i=0; i<4; i++) {
-		if (w[i] && nodes[i] == _node)
-			return true;
-	}
-	return false;
+bool IneqCon::contains(Node* _node)
+{
+    for (int i = 0; i < 4; i++) {
+        if (w[i] && nodes[i] == _node)
+            return true;
+    }
+    return false;
 }
 
-// SERIALIZER 
-template<> void serializer<vector<Constraint*> >(vector<Constraint*>& x, Serialize& s, const string& n) { 
-	serializer_array(x,s,n); 
-	for (size_t i=0; i<x.size(); i++)
-		x[i]->serializer(s,n);
+// SERIALIZER
+template <>
+void serializer<vector<Constraint*>>(vector<Constraint*>& x, Serialize& s, const string& n)
+{
+    serializer_array(x, s, n);
+    for (size_t i = 0; i < x.size(); i++)
+        x[i]->serializer(s, n);
 }
 
-void IneqCon::serializer(Serialize& s, const std::string& name) {
-	for (int i=0; i<4; i++) {
-		::serializer(w[i],s,"w[i]");
-		if (w[i] && nodes[i])
-			::serializer(nodes[i]->index,s,"nodes[i]");
-	}
-	::serializer(stiff,s,"stiff");
-	::serializer(n,s,"n");
+void IneqCon::serializer(Serialize& s, const std::string& name)
+{
+    for (int i = 0; i < 4; i++) {
+        ::serializer(w[i], s, "w[i]");
+        if (w[i] && nodes[i])
+            ::serializer(nodes[i]->index, s, "nodes[i]");
+    }
+    ::serializer(stiff, s, "stiff");
+    ::serializer(n, s, "n");
 }
-

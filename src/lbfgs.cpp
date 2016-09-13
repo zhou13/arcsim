@@ -32,12 +32,13 @@
 using namespace std;
 using namespace alglib;
 
-static const NLOpt *problem;
+static const NLOpt* problem;
 
-static void lbfgs_value_and_grad (const real_1d_array &x, double &value,
-                                  real_1d_array &grad, void *ptr=NULL);
+static void lbfgs_value_and_grad(const real_1d_array& x, double& value,
+    real_1d_array& grad, void* ptr = NULL);
 
-void l_bfgs_method (const NLOpt &problem, OptOptions opt, bool verbose) {
+void l_bfgs_method(const NLOpt& problem, OptOptions opt, bool verbose)
+{
     ::problem = &problem;
     real_1d_array x;
     x.setlength(::problem->nvar);
@@ -47,7 +48,7 @@ void l_bfgs_method (const NLOpt &problem, OptOptions opt, bool verbose) {
     int m = 10;
     minlbfgscreate(m, x, state);
     minlbfgssetcond(state, opt.eps_g(), opt.eps_f(), opt.eps_x(),
-                           opt.max_iter());
+        opt.max_iter());
     minlbfgsoptimize(state, lbfgs_value_and_grad);
     minlbfgsresults(state, x, rep);
     if (verbose)
@@ -60,8 +61,9 @@ void l_bfgs_method (const NLOpt &problem, OptOptions opt, bool verbose) {
         x[i] += y[i];
 }*/
 
-static void lbfgs_value_and_grad (const real_1d_array &x, double &value,
-                                 real_1d_array &grad, void *ptr) {
+static void lbfgs_value_and_grad(const real_1d_array& x, double& value,
+    real_1d_array& grad, void* ptr)
+{
     ::problem->precompute(&x[0]);
     value = ::problem->objective(&x[0]);
     ::problem->gradient(&x[0], &grad[0]);

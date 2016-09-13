@@ -31,61 +31,57 @@
 #include "util.hpp"
 #include <zlib.h>
 
-void triangle_to_obj (const std::string &infile, const std::string &outfile);
+void triangle_to_obj(const std::string& infile, const std::string& outfile);
 
-void load_obj (Mesh &mesh, const std::string &filename);
-void load_objs (std::vector<Mesh*> &meshes, const std::string &prefix);
+void load_obj(Mesh& mesh, const std::string& filename);
+void load_objs(std::vector<Mesh*>& meshes, const std::string& prefix);
 
-void save_obj (const Mesh &mesh, const std::string &filename);
-void save_objs (const std::vector<Mesh*> &meshes, const std::string &prefix);
+void save_obj(const Mesh& mesh, const std::string& filename);
+void save_objs(const std::vector<Mesh*>& meshes, const std::string& prefix);
 
-template<class T>
-void test_state (T& state, const std::string &prefix);
-template<class T>
-void save_state (T& state, const std::string &prefix);
-template<class T>
-bool load_state (T& state, const std::string &prefix);
+template <class T>
+void test_state(T& state, const std::string& prefix);
+template <class T>
+void save_state(T& state, const std::string& prefix);
+template <class T>
+bool load_state(T& state, const std::string& prefix);
 
-void save_transformation (const Transformation &tr,
-                          const std::string &filename);
+void save_transformation(const Transformation& tr,
+    const std::string& filename);
 
 // w_crop and h_crop specify a multiplicative crop window
-void save_screenshot (const std::string &filename);
+void save_screenshot(const std::string& filename);
 
 // check that output directory exists; if not, create it
-void ensure_existing_directory (const std::string &path);
-
-
-
+void ensure_existing_directory(const std::string& path);
 
 // IMPLEMENTATION
 
 std::string obtain_subframe_id();
 void serialize_header(Serialize& s);
 
-template<class T>
-void test_state (T& state, const std::string& prefix) {
-	// build consistent subframe indice
-	std::string id = obtain_subframe_id();
-	std::string cname = prefix + "_" + id + ".chk";
-	
-	Serialize s;
+template <class T>
+void test_state(T& state, const std::string& prefix)
+{
+    // build consistent subframe indice
+    std::string id = obtain_subframe_id();
+    std::string cname = prefix + "_" + id + ".chk";
+
+    Serialize s;
     s.mode = Serialize::Check;
     s.fp = gzopen(cname.c_str(), "r");
     if (!s.fp) {
-    	s.mode = Serialize::Save;
-    	s.fp = gzopen(cname.c_str(), "w3");
-    	if (!s.fp) {
-    		std::cout << "can't write check file " << cname << std::endl;
-    		exit(1);
-    	}
-    }	
+        s.mode = Serialize::Save;
+        s.fp = gzopen(cname.c_str(), "w3");
+        if (!s.fp) {
+            std::cout << "can't write check file " << cname << std::endl;
+            exit(1);
+        }
+    }
     std::cout << "CHECK: frame " << id << " [" << (s.save() ? "WRITE" : "READ") << "]\n";
     serialize_header(s);
-    serializer(state, s);    
+    serializer(state, s);
     gzclose(s.fp);
 }
-
-
 
 #endif

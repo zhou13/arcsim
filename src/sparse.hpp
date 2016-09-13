@@ -32,31 +32,37 @@
 #include <utility>
 #include <vector>
 
-inline size_t find_index (int i, const std::vector<int> &indices) {
+inline size_t find_index(int i, const std::vector<int>& indices)
+{
     for (size_t ii = 0; ii < indices.size(); ii++)
         if (indices[ii] == i)
             return ii;
     return indices.size();
 }
 
-template <typename T> void insert_index (int i, int j,
-                                         std::vector<int> &indices,
-                                         std::vector<T> &entries) {
+template <typename T>
+void insert_index(int i, int j,
+    std::vector<int>& indices,
+    std::vector<T>& entries)
+{
     indices.insert(indices.begin() + j, i);
     entries.insert(entries.begin() + j, T(0));
 }
 
-template <typename T> struct SpVec {
+template <typename T>
+struct SpVec {
     std::vector<int> indices;
     std::vector<T> entries;
-    T operator[] (int i) const {
+    T operator[](int i) const
+    {
         size_t j = find_index(i, indices);
         if (j >= indices.size() || indices[j] != i)
             return T(0);
         else
             return entries[j];
     }
-    T &operator[] (int i) {// inserts entry as side-effect
+    T& operator[](int i)
+    { // inserts entry as side-effect
         size_t j = find_index(i, indices);
         if (j >= indices.size() || indices[j] != i)
             insert_index((int)i, (int)j, indices, entries);
@@ -65,36 +71,51 @@ template <typename T> struct SpVec {
 };
 
 template <typename T>
-std::ostream &operator<< (std::ostream &out, const SpVec<T> &v) {
+std::ostream& operator<<(std::ostream& out, const SpVec<T>& v)
+{
     out << "[";
     for (int k = 0; k < v.indices.size(); k++)
-        out << (k==0 ? "" : ", ") << v.indices[k] << ": " << v.entries[k];
+        out << (k == 0 ? "" : ", ") << v.indices[k] << ": " << v.entries[k];
     out << "]";
     return out;
 }
 
-template <typename T> struct SpMat {
+template <typename T>
+struct SpMat {
     int m, n;
-    std::vector< SpVec<T> > rows;
-    SpMat (): m(0), n(0), rows() {}
-    explicit SpMat (int m, int n): m(m), n(n), rows(m) {}
-    T operator() (int i, int j) const {
+    std::vector<SpVec<T>> rows;
+    SpMat()
+        : m(0)
+        , n(0)
+        , rows()
+    {
+    }
+    explicit SpMat(int m, int n)
+        : m(m)
+        , n(n)
+        , rows(m)
+    {
+    }
+    T operator()(int i, int j) const
+    {
         return rows[i][j];
     }
-    T &operator() (int i, int j) {// inserts entry as side-effect
+    T& operator()(int i, int j)
+    { // inserts entry as side-effect
         return rows[i][j];
     }
 };
 
 template <typename T>
-std::ostream &operator<< (std::ostream &out, const SpMat<T> &A) {
+std::ostream& operator<<(std::ostream& out, const SpMat<T>& A)
+{
     out << "[";
     for (int i = 0; i < A.m; i++) {
-        const SpVec<T> &row = A.rows[i];
+        const SpVec<T>& row = A.rows[i];
         for (int jj = 0; jj < row.indices.size(); jj++) {
             int j = row.indices[jj];
-            const T &aij = row.entries[jj];
-            out << (i==0 && jj==0 ? "" : ", ") << "(" << i << "," << j
+            const T& aij = row.entries[jj];
+            out << (i == 0 && jj == 0 ? "" : ", ") << "(" << i << "," << j
                 << "): " << aij;
         }
     }
@@ -102,16 +123,17 @@ std::ostream &operator<< (std::ostream &out, const SpMat<T> &A) {
     return out;
 }
 
-inline void debug_save_spmat (const SpMat<double> &A) {
+inline void debug_save_spmat(const SpMat<double>& A)
+{
     static int n = 0;
     std::fstream file(stringf("tmp/spmat%d", n++).c_str(), std::ios::out);
     file << "SparseArray[{";
     for (int i = 0; i < A.m; i++) {
-        const SpVec<double> &row = A.rows[i];
+        const SpVec<double>& row = A.rows[i];
         for (int jj = 0; jj < (int)row.indices.size(); jj++) {
             int j = row.indices[jj];
-            const double &aij = row.entries[jj];
-            file << (i==0 && jj==0 ? "" : ", ") << "{" << i+1 << "," << j+1
+            const double& aij = row.entries[jj];
+            file << (i == 0 && jj == 0 ? "" : ", ") << "{" << i + 1 << "," << j + 1
                  << "} -> " << aij;
         }
     }

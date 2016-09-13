@@ -33,45 +33,51 @@
 
 struct Handle {
     double start_time, end_time, fade_time;
-    virtual ~Handle () {};
-    virtual std::vector<Constraint*> get_constraints (double t) = 0;
-    virtual std::vector<Node*> get_nodes () = 0;
-    bool active (double t) {return t >= start_time && t <= end_time;}
-    double strength (double t) {
-        if (t < start_time || t > end_time + fade_time) return 0;
-        if (t <= end_time) return 1;
-        double s = 1 - (t - end_time)/(fade_time + 1e-6);
+    virtual ~Handle(){};
+    virtual std::vector<Constraint*> get_constraints(double t) = 0;
+    virtual std::vector<Node*> get_nodes() = 0;
+    bool active(double t) { return t >= start_time && t <= end_time; }
+    double strength(double t)
+    {
+        if (t < start_time || t > end_time + fade_time)
+            return 0;
+        if (t <= end_time)
+            return 1;
+        double s = 1 - (t - end_time) / (fade_time + 1e-6);
         return sq(sq(s));
     }
-    virtual void add_forces(double t, std::vector<Vec3> &fext, std::vector<Mat3x3>& Jext) {}
-
+    virtual void add_forces(double t, std::vector<Vec3>& fext, std::vector<Mat3x3>& Jext) {}
 };
 
-struct NodeHandle: public Handle {
-    Node *node;
-    const Motion *motion;
+struct NodeHandle : public Handle {
+    Node* node;
+    const Motion* motion;
     bool activated;
     Vec3 x0;
-    NodeHandle (): activated(false) {}
-    std::vector<Constraint*> get_constraints (double t);
-    std::vector<Node*> get_nodes () {return std::vector<Node*>(1, node);}
+    NodeHandle()
+        : activated(false)
+    {
+    }
+    std::vector<Constraint*> get_constraints(double t);
+    std::vector<Node*> get_nodes() { return std::vector<Node*>(1, node); }
 };
 
-struct CircleHandle: public Handle {
-    Mesh *mesh;
+struct CircleHandle : public Handle {
+    Mesh* mesh;
     int label;
-    const Motion *motion;
+    const Motion* motion;
     double c; // circumference
     Vec2 u;
     Vec3 xc, dx0, dx1;
-    std::vector<Constraint*> get_constraints (double t);
-    std::vector<Node*> get_nodes () {return std::vector<Node*>();}
+    std::vector<Constraint*> get_constraints(double t);
+    std::vector<Node*> get_nodes() { return std::vector<Node*>(); }
 };
 
-struct GlueHandle: public Handle {
+struct GlueHandle : public Handle {
     Node* nodes[2];
-    std::vector<Constraint*> get_constraints (double t);
-    std::vector<Node*> get_nodes () {
+    std::vector<Constraint*> get_constraints(double t);
+    std::vector<Node*> get_nodes()
+    {
         std::vector<Node*> ns;
         ns.push_back(nodes[0]);
         ns.push_back(nodes[1]);
@@ -79,14 +85,14 @@ struct GlueHandle: public Handle {
     }
 };
 
-struct SoftHandle: public Handle {
-    Mesh *mesh;
+struct SoftHandle : public Handle {
+    Mesh* mesh;
     Vec3 center;
     double radius;
-    const Motion *motion;
-    std::vector<Constraint*> get_constraints (double t);
-    std::vector<Node*> get_nodes ();
-    void add_forces(double t, std::vector<Vec3> &fext, std::vector<Mat3x3>& Jext);
+    const Motion* motion;
+    std::vector<Constraint*> get_constraints(double t);
+    std::vector<Node*> get_nodes();
+    void add_forces(double t, std::vector<Vec3>& fext, std::vector<Mat3x3>& Jext);
 };
 
 #endif

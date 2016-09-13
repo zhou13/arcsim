@@ -30,6 +30,6 @@
 #include <string>
 #include <vector>
 
-void display_testing (const std::vector<std::string> &args);
+void display_testing(const std::vector<std::string>& args);
 
 #endif

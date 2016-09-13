@@ -32,30 +32,31 @@
 #define GL_GLEXT_PROTOTYPES
 
 #if __APPLE__ & __MACH__
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#include <OpenGL/glext.h>
 #include <GL/freeglut.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#include <OpenGL/glu.h>
 #elif defined(_WIN32)
-#include <Windows.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <Windows.h>
 //#include <GL/glx.h>
 #include <GL/glext.h>
 #include <GL/glut.h>
 #else
+#include <GL/freeglut.h>
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <GL/glu.h>
 #include <GL/glx.h>
-#include <GL/glext.h>
-#include <GL/freeglut.h>
 #endif
 
 #else
 
 #include <cstdlib>
 #include <iostream>
-inline void opengl_fail () {
+inline void opengl_fail()
+{
     std::cout << "Error: OpenGL is disabled in this build." << std::endl;
     std::exit(EXIT_FAILURE);
 }

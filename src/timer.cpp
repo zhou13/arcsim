@@ -24,23 +24,28 @@
   UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 */
 
-#include <iostream>
 #include "timer.hpp"
 #include "simulation.hpp"
+#include <iostream>
 using namespace std;
 using namespace boost::posix_time;
 
-Timer::Timer (): last(0), total(0) {
+Timer::Timer()
+    : last(0)
+    , total(0)
+{
     tick();
 }
 
-void Timer::tick () {
+void Timer::tick()
+{
     then = microsec_clock::local_time();
 }
 
-void Timer::tock () {
+void Timer::tock()
+{
     ptime now = microsec_clock::local_time();
-    last = (now - then).total_microseconds()*1e-6;
+    last = (now - then).total_microseconds() * 1e-6;
     total += last;
     then = now;
 }

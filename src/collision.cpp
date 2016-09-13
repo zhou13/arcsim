@@ -27,38 +27,43 @@
 #include "collision.hpp"
 
 #include "collisionutil.hpp"
+#include "display.hpp"
 #include "geometry.hpp"
 #include "magic.hpp"
 #include "optimization.hpp"
-#include "display.hpp"
 #include "simulation.hpp"
 #include "timer.hpp"
 #include <algorithm>
 #include <fstream>
-#include <omp.h>
 #include <map>
+#include <omp.h>
 using namespace std;
 
 static const int max_iter = 30;
-static const double &thickness = ::magic.projection_thickness;
+static const double& thickness = ::magic.projection_thickness;
 
 static double obs_mass;
 static bool deform_obstacles;
 
 static map<const Node*, Vec3> xold;
 
-static double get_mass (const Node *node) {
-    return is_free(node) ? node->m : obs_mass;}
+static double get_mass(const Node* node)
+{
+    return is_free(node) ? node->m : obs_mass;
+}
 
 struct Impact {
-    enum Type {VF, EE} type;
+    enum Type { VF,
+        EE } type;
     double t;
-    Node *nodes[4];
+    Node* nodes[4];
     double w[4];
     Vec3 n;
-    Impact () {}
-    Impact (Type type, const Node *n0, const Node *n1, const Node *n2,
-            const Node *n3): type(type) {
+    Impact() {}
+    Impact(Type type, const Node* n0, const Node* n1, const Node* n2,
+        const Node* n3)
+        : type(type)
+    {
         nodes[0] = (Node*)n0;
         nodes[1] = (Node*)n1;
         nodes[2] = (Node*)n2;
@@ -72,32 +77,33 @@ struct ImpactZone {
     bool active;
 };
 
-void update_active (const vector<AccelStruct*> &accs,
-                    const vector<AccelStruct*> &obs_accs,
-                    const vector<ImpactZone*> &zones);
+void update_active(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs,
+    const vector<ImpactZone*>& zones);
 
-vector<Impact> find_impacts (const vector<AccelStruct*> &acc,
-                             const vector<AccelStruct*> &obs_accs);
-vector<Impact> independent_impacts (const vector<Impact> &impacts);
+vector<Impact> find_impacts(const vector<AccelStruct*>& acc,
+    const vector<AccelStruct*>& obs_accs);
+vector<Impact> independent_impacts(const vector<Impact>& impacts);
 
-void add_impacts (const vector<Impact> &impacts, vector<ImpactZone*> &zones);
+void add_impacts(const vector<Impact>& impacts, vector<ImpactZone*>& zones);
 
-void apply_inelastic_projection (ImpactZone *zone,
-                                 const vector<Constraint*> &cons);
+void apply_inelastic_projection(ImpactZone* zone,
+    const vector<Constraint*>& cons);
 
-vector<Constraint> impact_constraints (const vector<ImpactZone*> &zones);
+vector<Constraint> impact_constraints(const vector<ImpactZone*>& zones);
 
-ostream &operator<< (ostream &out, const Impact &imp);
-ostream &operator<< (ostream &out, const ImpactZone *zone);
+ostream& operator<<(ostream& out, const Impact& imp);
+ostream& operator<<(ostream& out, const ImpactZone* zone);
 
-void collision_response (vector<Mesh*> &meshes, const vector<Constraint*> &cons,
-                         const vector<Mesh*> &obs_meshes) {
+void collision_response(vector<Mesh*>& meshes, const vector<Constraint*>& cons,
+    const vector<Mesh*>& obs_meshes)
+{
     xold.clear();
     build_node_lookup(xold, meshes);
     build_node_lookup(xold, obs_meshes);
-    
-    vector<AccelStruct*> accs = create_accel_structs(meshes, true),
-                         obs_accs = create_accel_structs(obs_meshes, true);
+
+    vector<AccelStruct *> accs = create_accel_structs(meshes, true),
+                          obs_accs = create_accel_structs(obs_meshes, true);
     vector<ImpactZone*> zones;
     ::obs_mass = 1e3;
     int iter;
@@ -113,7 +119,7 @@ void collision_response (vector<Mesh*> &meshes, const vector<Constraint*> &cons,
                 break;
             add_impacts(impacts, zones);
             for (int z = 0; z < (int)zones.size(); z++) {
-                ImpactZone *zone = zones[z];
+                ImpactZone* zone = zones[z];
                 apply_inelastic_projection(zone, cons);
             }
             for (int a = 0; a < (int)accs.size(); a++)
@@ -151,36 +157,39 @@ void collision_response (vector<Mesh*> &meshes, const vector<Constraint*> &cons,
     destroy_accel_structs(obs_accs);
 }
 
-void update_active (const vector<AccelStruct*> &accs,
-                    const vector<AccelStruct*> &obs_accs,
-                    const vector<ImpactZone*> &zones) {
+void update_active(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs,
+    const vector<ImpactZone*>& zones)
+{
     for (int a = 0; a < (int)accs.size(); a++)
         mark_all_inactive(*accs[a]);
     for (int a = 0; a < (int)obs_accs.size(); a++)
         mark_all_inactive(*obs_accs[a]);
     for (int z = 0; z < (int)zones.size(); z++) {
-        const ImpactZone *zone = zones[z];
+        const ImpactZone* zone = zones[z];
         if (!zone->active)
             continue;
         for (int n = 0; n < (int)zone->nodes.size(); n++) {
-            const Node *node = zone->nodes[n];
+            const Node* node = zone->nodes[n];
 
             // find matching acc
             AccelStruct* acc = 0;
-            for (size_t i=0; i<accs.size(); i++)
-            	if (node->mesh == accs[i]->tree._mdl)
-            		acc = accs[i];
-			for (size_t i=0; i<obs_accs.size(); i++)
-            	if (node->mesh == obs_accs[i]->tree._mdl)
-            		acc = obs_accs[i];
+            for (size_t i = 0; i < accs.size(); i++)
+                if (node->mesh == accs[i]->tree._mdl)
+                    acc = accs[i];
+            for (size_t i = 0; i < obs_accs.size(); i++)
+                if (node->mesh == obs_accs[i]->tree._mdl)
+                    acc = obs_accs[i];
 
-            if (acc==0)
-                { cout << node->mesh << " " << is_free(node) << endl;
-                for (int i=0;i<sim.cloths.size(); i++)
+            if (acc == 0) {
+                cout << node->mesh << " " << is_free(node) << endl;
+                for (int i = 0; i < sim.cloths.size(); i++)
                     cout << "m" << i << " " << &(sim.cloths[i].mesh) << endl;
-                for (int i=0;i<sim.obstacle_meshes.size(); i++)
+                for (int i = 0; i < sim.obstacle_meshes.size(); i++)
                     cout << "o" << i << " " << sim.obstacle_meshes[i] << endl;
-                    Annotation::add((Node*)node); wait_key();}
+                Annotation::add((Node*)node);
+                wait_key();
+            }
 
             for (int v = 0; v < (int)node->verts.size(); v++)
                 for (int f = 0; f < (int)node->verts[v]->adjf.size(); f++)
@@ -192,15 +201,16 @@ void update_active (const vector<AccelStruct*> &accs,
 // Impacts
 
 static int nthreads = 0;
-static vector<Impact> *impacts = NULL;
+static vector<Impact>* impacts = NULL;
 
-void find_face_impacts (const Face *face0, const Face *face1);
+void find_face_impacts(const Face* face0, const Face* face1);
 
-vector<Impact> find_impacts (const vector<AccelStruct*> &accs,
-                             const vector<AccelStruct*> &obs_accs) {
+vector<Impact> find_impacts(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs)
+{
     if (!impacts) {
         ::nthreads = omp_get_max_threads();
-        ::impacts = new vector<Impact>[::nthreads];
+        ::impacts = new vector<Impact>[ ::nthreads];
     }
     for (int t = 0; t < ::nthreads; t++)
         ::impacts[t].clear();
@@ -211,10 +221,11 @@ vector<Impact> find_impacts (const vector<AccelStruct*> &accs,
     return impacts;
 }
 
-bool vf_collision_test (const Vert *vert, const Face *face, Impact &impact);
-bool ee_collision_test (const Edge *edge0, const Edge *edge1, Impact &impact);
+bool vf_collision_test(const Vert* vert, const Face* face, Impact& impact);
+bool ee_collision_test(const Edge* edge0, const Edge* edge1, Impact& impact);
 
-void find_face_impacts (const Face *face0, const Face *face1) {
+void find_face_impacts(const Face* face0, const Face* face1)
+{
     int t = omp_get_thread_num();
     Impact impact;
     for (int v = 0; v < 3; v++)
@@ -229,37 +240,40 @@ void find_face_impacts (const Face *face0, const Face *face1) {
                 ::impacts[t].push_back(impact);
 }
 
-bool collision_test (Impact::Type type, const Node *node0, const Node *node1,
-                     const Node *node2, const Node *node3, Impact &impact);
+bool collision_test(Impact::Type type, const Node* node0, const Node* node1,
+    const Node* node2, const Node* node3, Impact& impact);
 
-bool vf_collision_test (const Vert *vert, const Face *face, Impact &impact) {
-    const Node *node = vert->node;
+bool vf_collision_test(const Vert* vert, const Face* face, Impact& impact)
+{
+    const Node* node = vert->node;
     if (node == face->v[0]->node
-     || node == face->v[1]->node
-     || node == face->v[2]->node)
+        || node == face->v[1]->node
+        || node == face->v[2]->node)
         return false;
     if (!overlap(node_box(node, true), face_box(face, true), ::thickness))
         return false;
     return collision_test(Impact::VF, node, face->v[0]->node, face->v[1]->node,
-                          face->v[2]->node, impact);
+        face->v[2]->node, impact);
 }
 
-bool ee_collision_test (const Edge *edge0, const Edge *edge1, Impact &impact) {
+bool ee_collision_test(const Edge* edge0, const Edge* edge1, Impact& impact)
+{
     if (edge0->n[0] == edge1->n[0] || edge0->n[0] == edge1->n[1]
         || edge0->n[1] == edge1->n[0] || edge0->n[1] == edge1->n[1])
         return false;
     if (!overlap(edge_box(edge0, true), edge_box(edge1, true), ::thickness))
         return false;
     return collision_test(Impact::EE, edge0->n[0], edge0->n[1],
-                          edge1->n[0], edge1->n[1], impact);
+        edge1->n[0], edge1->n[1], impact);
 }
 
-int solve_cubic (double a3, double a2, double a1, double a0, double t[3]);
+int solve_cubic(double a3, double a2, double a1, double a0, double t[3]);
 
-Vec3 pos (const Node *node, double t);
+Vec3 pos(const Node* node, double t);
 
-bool collision_test (Impact::Type type, const Node *node0, const Node *node1,
-                     const Node *node2, const Node *node3, Impact &impact) {
+bool collision_test(Impact::Type type, const Node* node0, const Node* node1,
+    const Node* node2, const Node* node3, Impact& impact)
+{
     impact.type = type;
     impact.nodes[0] = (Node*)node0;
     impact.nodes[1] = (Node*)node1;
@@ -273,7 +287,7 @@ bool collision_test (Impact::Type type, const Node *node0, const Node *node1,
            a1 = stp(v1, x2, x3) + stp(x1, v2, x3) + stp(x1, x2, v3),
            a2 = stp(x1, v2, v3) + stp(v1, x2, v3) + stp(v1, v2, x3),
            a3 = stp(v1, v2, v3);
-    if (abs(a0) < 1e-6*norm(x1)*norm(x2)*norm(x3))
+    if (abs(a0) < 1e-6 * norm(x1) * norm(x2) * norm(x3))
         return false; // initially coplanar
     double t[4];
     int nsol = solve_cubic(a3, a2, a1, a0, t);
@@ -282,20 +296,20 @@ bool collision_test (Impact::Type type, const Node *node0, const Node *node1,
         if (t[i] < 0 || t[i] > 1)
             continue;
         impact.t = t[i];
-        Vec3 x0 = pos(node0,t[i]), x1 = pos(node1,t[i]),
-             x2 = pos(node2,t[i]), x3 = pos(node3,t[i]);
-        Vec3 &n = impact.n;
-        double *w = impact.w;
+        Vec3 x0 = pos(node0, t[i]), x1 = pos(node1, t[i]),
+             x2 = pos(node2, t[i]), x3 = pos(node3, t[i]);
+        Vec3& n = impact.n;
+        double* w = impact.w;
         double d;
         bool inside;
         if (type == Impact::VF) {
             d = signed_vf_distance(x0, x1, x2, x3, &n, w);
             inside = (min(-w[1], -w[2], -w[3]) >= -1e-6);
-        } else {// Impact::EE
+        } else { // Impact::EE
             d = signed_ee_distance(x0, x1, x2, x3, &n, w);
             inside = (min(w[0], w[1], -w[2], -w[3]) >= -1e-6);
         }
-        if (dot(n, w[1]*v1 + w[2]*v2 + w[3]*v3) > 0)
+        if (dot(n, w[1] * v1 + w[2] * v2 + w[3] * v3) > 0)
             n = -n;
         if (abs(d) < 1e-6 && inside)
             return true;
@@ -303,53 +317,57 @@ bool collision_test (Impact::Type type, const Node *node0, const Node *node1,
     return false;
 }
 
-Vec3 pos (const Node *node, double t) {
-    return node->x0 + t*(node->x - node->x0);}
+Vec3 pos(const Node* node, double t)
+{
+    return node->x0 + t * (node->x - node->x0);
+}
 
 // Solving cubic equations
 
-double newtons_method (double a, double b, double c, double d, double x0,
-                       int init_dir);
+double newtons_method(double a, double b, double c, double d, double x0,
+    int init_dir);
 
 // solves a x^3 + b x^2 + c x + d == 0
-int solve_cubic (double a, double b, double c, double d, double x[3]) {
+int solve_cubic(double a, double b, double c, double d, double x[3])
+{
     double xc[2];
-    int ncrit = solve_quadratic(3*a, 2*b, c, xc);
+    int ncrit = solve_quadratic(3 * a, 2 * b, c, xc);
     if (ncrit == 0) {
         x[0] = newtons_method(a, b, c, d, xc[0], 0);
         return 1;
-    } else if (ncrit == 1) {// cubic is actually quadratic
+    } else if (ncrit == 1) { // cubic is actually quadratic
         return solve_quadratic(b, c, d, x);
     } else {
-        double yc[2] = {d + xc[0]*(c + xc[0]*(b + xc[0]*a)),
-                        d + xc[1]*(c + xc[1]*(b + xc[1]*a))};
+        double yc[2] = { d + xc[0] * (c + xc[0] * (b + xc[0] * a)),
+            d + xc[1] * (c + xc[1] * (b + xc[1] * a)) };
         int i = 0;
-        if (yc[0]*a >= 0)
+        if (yc[0] * a >= 0)
             x[i++] = newtons_method(a, b, c, d, xc[0], -1);
-        if (yc[0]*yc[1] <= 0) {
-            int closer = abs(yc[0])<abs(yc[1]) ? 0 : 1;
-            x[i++] = newtons_method(a, b, c, d, xc[closer], closer==0?1:-1);
+        if (yc[0] * yc[1] <= 0) {
+            int closer = abs(yc[0]) < abs(yc[1]) ? 0 : 1;
+            x[i++] = newtons_method(a, b, c, d, xc[closer], closer == 0 ? 1 : -1);
         }
-        if (yc[1]*a <= 0)
+        if (yc[1] * a <= 0)
             x[i++] = newtons_method(a, b, c, d, xc[1], 1);
         return i;
     }
 }
 
-double newtons_method (double a, double b, double c, double d, double x0,
-                       int init_dir) {
+double newtons_method(double a, double b, double c, double d, double x0,
+    int init_dir)
+{
     if (init_dir != 0) {
         // quadratic approximation around x0, assuming y' = 0
-        double y0 = d + x0*(c + x0*(b + x0*a)),
-               ddy0 = 2*b + x0*(6*a);
-        x0 += init_dir*sqrt(abs(2*y0/ddy0));
+        double y0 = d + x0 * (c + x0 * (b + x0 * a)),
+               ddy0 = 2 * b + x0 * (6 * a);
+        x0 += init_dir * sqrt(abs(2 * y0 / ddy0));
     }
     for (int iter = 0; iter < 100; iter++) {
-        double y = d + x0*(c + x0*(b + x0*a));
-        double dy = c + x0*(2*b + x0*3*a);
+        double y = d + x0 * (c + x0 * (b + x0 * a));
+        double dy = c + x0 * (2 * b + x0 * 3 * a);
         if (dy == 0)
             return x0;
-        double x1 = x0 - y/dy;
+        double x1 = x0 - y / dy;
         if (abs(x0 - x1) < 1e-6)
             return x0;
         x0 = x1;
@@ -359,18 +377,20 @@ double newtons_method (double a, double b, double c, double d, double x0,
 
 // Independent impacts
 
-bool operator< (const Impact &impact0, const Impact &impact1) {
+bool operator<(const Impact& impact0, const Impact& impact1)
+{
     return impact0.t < impact1.t;
 }
 
-bool conflict (const Impact &impact0, const Impact &impact1);
+bool conflict(const Impact& impact0, const Impact& impact1);
 
-vector<Impact> independent_impacts (const vector<Impact> &impacts) {
+vector<Impact> independent_impacts(const vector<Impact>& impacts)
+{
     vector<Impact> sorted = impacts;
     sort(sorted.begin(), sorted.end());
     vector<Impact> indep;
     for (int e = 0; e < (int)sorted.size(); e++) {
-        const Impact &impact = sorted[e];
+        const Impact& impact = sorted[e];
         bool con = false;
         for (int e1 = 0; e1 < (int)indep.size(); e1++)
             if (conflict(impact, indep[e1]))
@@ -381,7 +401,8 @@ vector<Impact> independent_impacts (const vector<Impact> &impacts) {
     return indep;
 }
 
-bool conflict (const Impact &i0, const Impact &i1) {
+bool conflict(const Impact& i0, const Impact& i1)
+{
     return (is_free(i0.nodes[0]) && is_in(i0.nodes[0], i1.nodes, 4))
         || (is_free(i0.nodes[1]) && is_in(i0.nodes[1], i1.nodes, 4))
         || (is_free(i0.nodes[2]) && is_in(i0.nodes[2], i1.nodes, 4))
@@ -390,38 +411,41 @@ bool conflict (const Impact &i0, const Impact &i1) {
 
 // Impact zones
 
-ImpactZone *find_or_create_zone (const Node *node, vector<ImpactZone*> &zones);
-void merge_zones (ImpactZone* zone0, ImpactZone *zone1,
-                  vector<ImpactZone*> &zones);
+ImpactZone* find_or_create_zone(const Node* node, vector<ImpactZone*>& zones);
+void merge_zones(ImpactZone* zone0, ImpactZone* zone1,
+    vector<ImpactZone*>& zones);
 
-void add_impacts (const vector<Impact> &impacts, vector<ImpactZone*> &zones) {
+void add_impacts(const vector<Impact>& impacts, vector<ImpactZone*>& zones)
+{
     for (int z = 0; z < (int)zones.size(); z++)
         zones[z]->active = false;
     for (int i = 0; i < (int)impacts.size(); i++) {
-        const Impact &impact = impacts[i];
-        Node *node = impact.nodes[is_free(impact.nodes[0]) ? 0 : 3];
-        ImpactZone *zone = find_or_create_zone(node, zones);
+        const Impact& impact = impacts[i];
+        Node* node = impact.nodes[is_free(impact.nodes[0]) ? 0 : 3];
+        ImpactZone* zone = find_or_create_zone(node, zones);
         for (int n = 0; n < 4; n++)
             if (is_free(impact.nodes[n]) || ::deform_obstacles)
                 merge_zones(zone, find_or_create_zone(impact.nodes[n], zones),
-                            zones);
+                    zones);
         zone->impacts.push_back(impact);
         zone->active = true;
     }
 }
 
-ImpactZone *find_or_create_zone (const Node *node, vector<ImpactZone*> &zones) {
+ImpactZone* find_or_create_zone(const Node* node, vector<ImpactZone*>& zones)
+{
     for (int z = 0; z < (int)zones.size(); z++)
         if (is_in((Node*)node, zones[z]->nodes))
             return zones[z];
-    ImpactZone *zone = new ImpactZone;
+    ImpactZone* zone = new ImpactZone;
     zone->nodes.push_back((Node*)node);
     zones.push_back(zone);
     return zone;
 }
 
-void merge_zones (ImpactZone* zone0, ImpactZone *zone1,
-                  vector<ImpactZone*> &zones) {
+void merge_zones(ImpactZone* zone0, ImpactZone* zone1,
+    vector<ImpactZone*>& zones)
+{
     if (zone0 == zone1)
         return;
     append(zone0->nodes, zone1->nodes);
@@ -432,80 +456,96 @@ void merge_zones (ImpactZone* zone0, ImpactZone *zone1,
 
 // Response
 
-struct NormalOpt: public NLConOpt {
-    ImpactZone *zone;
+struct NormalOpt : public NLConOpt {
+    ImpactZone* zone;
     double inv_m;
-    NormalOpt (): zone(NULL), inv_m(0) {nvar = ncon = 0;}
-    NormalOpt (ImpactZone *zone): zone(zone), inv_m(0) {
-        nvar = zone->nodes.size()*3;
+    NormalOpt()
+        : zone(NULL)
+        , inv_m(0)
+    {
+        nvar = ncon = 0;
+    }
+    NormalOpt(ImpactZone* zone)
+        : zone(zone)
+        , inv_m(0)
+    {
+        nvar = zone->nodes.size() * 3;
         ncon = zone->impacts.size();
         for (int n = 0; n < (int)zone->nodes.size(); n++)
-            inv_m += 1/get_mass(zone->nodes[n]);
+            inv_m += 1 / get_mass(zone->nodes[n]);
         inv_m /= zone->nodes.size();
     }
-    void initialize (double *x) const;
-    void precompute (const double *x) const;
-    double objective (const double *x) const;
-    void obj_grad (const double *x, double *grad) const;
-    double constraint (const double *x, int i, int &sign) const;
-    void con_grad (const double *x, int i, double factor, double *grad) const;
-    void finalize (const double *x) const;
+    void initialize(double* x) const;
+    void precompute(const double* x) const;
+    double objective(const double* x) const;
+    void obj_grad(const double* x, double* grad) const;
+    double constraint(const double* x, int i, int& sign) const;
+    void con_grad(const double* x, int i, double factor, double* grad) const;
+    void finalize(const double* x) const;
 };
 
-void apply_inelastic_projection (ImpactZone *zone,
-                                 const vector<Constraint*> &cons) {
+void apply_inelastic_projection(ImpactZone* zone,
+    const vector<Constraint*>& cons)
+{
     if (!zone->active)
         return;
     augmented_lagrangian_method(NormalOpt(zone));
 }
 
-void NormalOpt::initialize (double *x) const {
+void NormalOpt::initialize(double* x) const
+{
     for (int n = 0; n < (int)zone->nodes.size(); n++)
         set_subvec(x, n, zone->nodes[n]->x);
 }
 
-void NormalOpt::precompute (const double *x) const {
+void NormalOpt::precompute(const double* x) const
+{
     for (int n = 0; n < (int)zone->nodes.size(); n++)
         zone->nodes[n]->x = get_subvec(x, n);
 }
 
-double NormalOpt::objective (const double *x) const {
+double NormalOpt::objective(const double* x) const
+{
     double e = 0;
     for (int n = 0; n < (int)zone->nodes.size(); n++) {
-        const Node *node = zone->nodes[n];
+        const Node* node = zone->nodes[n];
         Vec3 dx = node->x - xold[node];
-        e += inv_m*get_mass(node)*norm2(dx)/2;
+        e += inv_m * get_mass(node) * norm2(dx) / 2;
     }
     return e;
 }
 
-void NormalOpt::obj_grad (const double *x, double *grad) const {
+void NormalOpt::obj_grad(const double* x, double* grad) const
+{
     for (int n = 0; n < (int)zone->nodes.size(); n++) {
-        const Node *node = zone->nodes[n];
+        const Node* node = zone->nodes[n];
         Vec3 dx = node->x - xold[node];
-        set_subvec(grad, n, inv_m*get_mass(node)*dx);
+        set_subvec(grad, n, inv_m * get_mass(node) * dx);
     }
 }
 
-double NormalOpt::constraint (const double *x, int j, int &sign) const {
+double NormalOpt::constraint(const double* x, int j, int& sign) const
+{
     sign = 1;
     double c = -::thickness;
-    const Impact &impact = zone->impacts[j];
+    const Impact& impact = zone->impacts[j];
     for (int n = 0; n < 4; n++)
-        c += impact.w[n]*dot(impact.n, impact.nodes[n]->x);
+        c += impact.w[n] * dot(impact.n, impact.nodes[n]->x);
     return c;
 }
 
-void NormalOpt::con_grad (const double *x, int j, double factor,
-                          double *grad) const {
-    const Impact &impact = zone->impacts[j];
+void NormalOpt::con_grad(const double* x, int j, double factor,
+    double* grad) const
+{
+    const Impact& impact = zone->impacts[j];
     for (int n = 0; n < 4; n++) {
         int i = find(impact.nodes[n], zone->nodes);
         if (i != -1)
-            add_subvec(grad, i, factor*impact.w[n]*impact.n);
+            add_subvec(grad, i, factor * impact.w[n] * impact.n);
     }
 }
 
-void NormalOpt::finalize (const double *x) const {
+void NormalOpt::finalize(const double* x) const
+{
     precompute(x);
 }

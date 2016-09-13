@@ -27,8 +27,9 @@
 #include "cloth.hpp"
 using namespace std;
 
-void compute_material (Material& mat, double Y) {
-	double A = Y / (1.0 - sq(mat.alt_poisson));
+void compute_material(Material& mat, double Y)
+{
+    double A = Y / (1.0 - sq(mat.alt_poisson));
     mat.alt_stretching = A * mat.thickness;
     mat.alt_bending = A / 12.0 * mat.thickness * sq(mat.thickness);
     mat.toughness *= mat.thickness;

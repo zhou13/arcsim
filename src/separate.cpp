@@ -38,68 +38,80 @@
 #include "util.hpp"
 using namespace std;
 
-static const double &thickness = ::magic.projection_thickness;
+static const double& thickness = ::magic.projection_thickness;
 
 static double obs_mass;
 static bool deform_obstacles;
-static double get_mass (const Node *node) {
-    return is_free(node) ? node->m : obs_mass;}
+static double get_mass(const Node* node)
+{
+    return is_free(node) ? node->m : obs_mass;
+}
 
 typedef Vec3 Bary; // barycentric coordinates
 typedef std::pair<Vec3, Vec3> Line3;
 
-struct Ixn {  // intersection
+struct Ixn { // intersection
     Face *f0, *f1;
     double l;
     Vec3 g0[3], g1[3]; // dl/dx for each of the faces' nodes
-    Ixn () {}
-    Ixn (const Face *f0, const Face *f1)
-        : f0((Face*)f0), f1((Face*)f1) {}
+    Ixn() {}
+    Ixn(const Face* f0, const Face* f1)
+        : f0((Face*)f0)
+        , f1((Face*)f1)
+    {
+    }
 };
 
-void update_active (const vector<AccelStruct*> &accs,
-                    const vector<AccelStruct*> &obs_accs,
-                    const vector<Ixn> &ixns);
+void update_active(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs,
+    const vector<Ixn>& ixns);
 
-vector<Ixn> find_intersections (const vector<AccelStruct*> &accs,
-        const vector<AccelStruct*> &obs_accs);
-vector<Ixn> find_overlappings (const vector<AccelStruct*> &accs,
-        const vector<AccelStruct*> &obs_accs);
+vector<Ixn> find_intersections(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs);
+vector<Ixn> find_overlappings(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs);
 
-bool edge_face_intersection (const Edge* edge, const Face *face, Vec3& pt);
-bool edge_face_intersection (const Vec3& e0, const Vec3& e1,
-                const Vec3& f0, const Vec3& f1, const Vec3& f2, const Vec3& fn, Vec3& pt);
-bool get_line_of_intersection (const Face *face0, const Face *face1, Line3& line);
+bool edge_face_intersection(const Edge* edge, const Face* face, Vec3& pt);
+bool edge_face_intersection(const Vec3& e0, const Vec3& e1,
+    const Vec3& f0, const Vec3& f1, const Vec3& f2, const Vec3& fn, Vec3& pt);
+bool get_line_of_intersection(const Face* face0, const Face* face1, Line3& line);
 
-void compute_length_and_gradient (Ixn &ixn);
+void compute_length_and_gradient(Ixn& ixn);
 
-vector< vector<Node*> > connected_components (const vector<Ixn> &ixns);
+vector<vector<Node*>> connected_components(const vector<Ixn>& ixns);
 
 // #include "display.hpp"
 
-void separate (vector<Mesh*> &meshes, const vector<Mesh*> &obs_meshes) {
+void separate(vector<Mesh*>& meshes, const vector<Mesh*>& obs_meshes)
+{
     if (false) {
         // Unit tests.
         Vec3 e0, e1;
         Vec3 f0, f1, f2, fn;
         Vec3 pt;
 
-        f0 = Vec3(1, 1, 0); f1 = Vec3(-1, 1, 0); f2 = Vec3(0, -1, 0);
+        f0 = Vec3(1, 1, 0);
+        f1 = Vec3(-1, 1, 0);
+        f2 = Vec3(0, -1, 0);
         fn = Vec3(0, 0, 1);
 
-        e0 = Vec3(0, 0.5, -0.5); e1 = Vec3(0, 0.5, 0.5);
+        e0 = Vec3(0, 0.5, -0.5);
+        e1 = Vec3(0, 0.5, 0.5);
         assert(edge_face_intersection(e0, e1, f0, f1, f2, fn, pt));
-        e0 = Vec3(1, 1, -1.0); e1 = Vec3(1, 1, 1.0);
+        e0 = Vec3(1, 1, -1.0);
+        e1 = Vec3(1, 1, 1.0);
         assert(edge_face_intersection(e0, e1, f0, f1, f2, fn, pt));
-        e0 = Vec3(0, 0.5, 0.1); e1 = Vec3(0, 0.5, 1.0);
+        e0 = Vec3(0, 0.5, 0.1);
+        e1 = Vec3(0, 0.5, 1.0);
         assert(!edge_face_intersection(e0, e1, f0, f1, f2, fn, pt));
-        e0 = Vec3(1, 0.5, -0.5); e1 = Vec3(1, 0.5, 0.5);
+        e0 = Vec3(1, 0.5, -0.5);
+        e1 = Vec3(1, 0.5, 0.5);
         assert(!edge_face_intersection(e0, e1, f0, f1, f2, fn, pt));
         // End of unit tests.
     }
 
-    vector<AccelStruct*> accs = create_accel_structs(meshes, false),
-                         obs_accs = create_accel_structs(obs_meshes, false);
+    vector<AccelStruct *> accs = create_accel_structs(meshes, false),
+                          obs_accs = create_accel_structs(obs_meshes, false);
 
     // double D = ::magic.separation_step_size;  // step size
     // //std::cout << "Separation with step_size: " << D << std::endl;
@@ -121,7 +133,7 @@ void separate (vector<Mesh*> &meshes, const vector<Mesh*> &obs_meshes) {
             double l_total = 0;
             g.clear();
             for (size_t i = 0; i < ixns.size(); i++) {
-                Ixn &ixn = ixns[i];
+                Ixn& ixn = ixns[i];
                 l_total += ixn.l;
                 for (int v = 0; v < 3; v++) {
                     g[ixn.f0->v[v]->node] += ixn.g0[v];
@@ -145,7 +157,7 @@ void separate (vector<Mesh*> &meshes, const vector<Mesh*> &obs_meshes) {
                           << " n_ixns: " << ixns.size()
                           << " l_total: " << l_total << std::endl;
 
-            vector< vector<Node*> > components = connected_components(ixns);
+            vector<vector<Node*>> components = connected_components(ixns);
 
             // for (size_t c = 0; c < components.size(); c++) {
             //     double t = 2*M_PI*c/components.size();
@@ -166,26 +178,26 @@ void separate (vector<Mesh*> &meshes, const vector<Mesh*> &obs_meshes) {
             vector<Vec3> gc(components.size()); // per-component gradient
             double denom = 0;
             for (size_t c = 0; c < components.size(); c++) {
-                const vector<Node*> &component = components[c];
+                const vector<Node*>& component = components[c];
                 mc[c] = 0;
                 gc[c] = Vec3(0);
                 for (size_t n = 0; n < component.size(); n++) {
-                    Node *node = component[n];
+                    Node* node = component[n];
                     if (!is_free(node) && !deform_obstacles)
                         continue;
                     mc[c] += get_mass(node);
                     gc[c] += g[node];
                 }
-                denom += norm2(gc[c])/mc[c];
+                denom += norm2(gc[c]) / mc[c];
             }
-            double step_length = (l_total + ::thickness)/denom;
+            double step_length = (l_total + ::thickness) / denom;
 
             // Apply the displacements.
             for (size_t c = 0; c < components.size(); c++) {
-                const vector<Node*> &component = components[c];
-                Vec3 displacement = -step_length*gc[c]/mc[c];
+                const vector<Node*>& component = components[c];
+                Vec3 displacement = -step_length * gc[c] / mc[c];
                 for (size_t n = 0; n < component.size(); n++) {
-                    Node *node = component[n];
+                    Node* node = component[n];
                     if (!is_free(node) && !deform_obstacles)
                         continue;
                     node->x += displacement;
@@ -200,7 +212,7 @@ void separate (vector<Mesh*> &meshes, const vector<Mesh*> &obs_meshes) {
             for (size_t o = 0; o < obs_meshes.size(); o++)
                 compute_ws_data(*obs_meshes[o]);
             for (size_t o = 0; o < obs_accs.size(); o++)
-                update_accel_struct(*obs_accs[o]);            
+                update_accel_struct(*obs_accs[o]);
         }
 
         if (deform_obstacles)
@@ -221,13 +233,14 @@ void separate (vector<Mesh*> &meshes, const vector<Mesh*> &obs_meshes) {
     // std::cout << "Separation done." << std::endl;
 }
 
-void add_gradient (const Face *face0, const Edge *edge0, const Face *face1,
-                   Vec3 *g0, Vec3 *g1);
+void add_gradient(const Face* face0, const Edge* edge0, const Face* face1,
+    Vec3* g0, Vec3* g1);
 
-double compute_coplanar (const Face *face0, const Edge *edge0,
-                         const Face *face1, Vec3 *g0, Vec3 *g1);
+double compute_coplanar(const Face* face0, const Edge* edge0,
+    const Face* face1, Vec3* g0, Vec3* g1);
 
-void compute_length_and_gradient (Ixn &ixn) {
+void compute_length_and_gradient(Ixn& ixn)
+{
     ixn.l = 0;
     for (int i = 0; i < 3; i++) {
         ixn.g0[i] = Vec3(0);
@@ -241,10 +254,10 @@ void compute_length_and_gradient (Ixn &ixn) {
         if (abs(dot(x1 - x0, n)) > ::thickness)
             return;
         for (int f = 0; f < 2; f++) {
-            const Face *face0 = (f==0) ? ixn.f0 : ixn.f1,
-                       *face1 = (f==0) ? ixn.f1 : ixn.f0;
-            Vec3 *g0 = (f==0) ? ixn.g0 : ixn.g1,
-                 *g1 = (f==0) ? ixn.g1 : ixn.g0;
+            const Face *face0 = (f == 0) ? ixn.f0 : ixn.f1,
+                       *face1 = (f == 0) ? ixn.f1 : ixn.f0;
+            Vec3 *g0 = (f == 0) ? ixn.g0 : ixn.g1,
+                 *g1 = (f == 0) ? ixn.g1 : ixn.g0;
             for (int i = 0; i < 3; i++)
                 ixn.l += compute_coplanar(face0, face0->adje[i], face1, g0, g1);
         }
@@ -256,20 +269,21 @@ void compute_length_and_gradient (Ixn &ixn) {
             return;
         ixn.l = norm(line.second - line.first);
         for (int f = 0; f < 2; f++) {
-            const Face *face0 = (f==0) ? ixn.f0 : ixn.f1,
-                       *face1 = (f==0) ? ixn.f1 : ixn.f0;
-            Vec3 *g0 = (f==0) ? ixn.g0 : ixn.g1,
-                 *g1 = (f==0) ? ixn.g1 : ixn.g0;
+            const Face *face0 = (f == 0) ? ixn.f0 : ixn.f1,
+                       *face1 = (f == 0) ? ixn.f1 : ixn.f0;
+            Vec3 *g0 = (f == 0) ? ixn.g0 : ixn.g1,
+                 *g1 = (f == 0) ? ixn.g1 : ixn.g0;
             for (int i = 0; i < 3; i++)
                 add_gradient(face0, face0->adje[i], face1, g0, g1);
         }
     }
 }
 
-Bary barycentric_coords (const Vec3 &x, const Face *face);
+Bary barycentric_coords(const Vec3& x, const Face* face);
 
-void add_gradient (const Face *face0, const Edge *edge0, const Face *face1,
-                   Vec3 *g0, Vec3 *g1) {
+void add_gradient(const Face* face0, const Edge* edge0, const Face* face1,
+    Vec3* g0, Vec3* g1)
+{
     Vec3 pt_ixn;
     bool is_ixn = edge_face_intersection(edge0, face1, pt_ixn);
     if (!is_ixn)
@@ -284,65 +298,72 @@ void add_gradient (const Face *face0, const Edge *edge0, const Face *face1,
         r = -r;
     if (abs(dot(e, n1)) < 1e-12)
         return; // edge is parallel to face, ignore
-    Vec3 face_grad = -dot(e,r)/dot(e,n1) * n1,
+    Vec3 face_grad = -dot(e, r) / dot(e, n1) * n1,
          edge_grad = -r - face_grad;
     Bary b0 = barycentric_coords(pt_ixn, face0),
          b1 = barycentric_coords(pt_ixn, face1);
     for (int v = 0; v < 3; v++) {
-        g0[v] += b0[v]*edge_grad;
-        g1[v] += b1[v]*face_grad;
+        g0[v] += b0[v] * edge_grad;
+        g1[v] += b1[v] * face_grad;
     }
 }
 
 struct EdgeClipping {
     double t[2];
-    Edge *edge[2]; // edges causing clip
-    EdgeClipping () {t[0] = 0; t[1] = 1; edge[0] = edge[1] = NULL;}
-    bool empty () {return t[0] > t[1];}
+    Edge* edge[2]; // edges causing clip
+    EdgeClipping()
+    {
+        t[0] = 0;
+        t[1] = 1;
+        edge[0] = edge[1] = NULL;
+    }
+    bool empty() { return t[0] > t[1]; }
 };
 
-EdgeClipping clip_edge_to_face (const Edge *edge, const Face *face);
+EdgeClipping clip_edge_to_face(const Edge* edge, const Face* face);
 
-double compute_coplanar (const Face *face0, const Edge *edge0,
-                         const Face *face1, Vec3 *g0, Vec3 *g1) {
+double compute_coplanar(const Face* face0, const Edge* edge0,
+    const Face* face1, Vec3* g0, Vec3* g1)
+{
     Vec3 x0 = edge0->n[0]->x, x1 = edge0->n[1]->x;
     Vec3 n = face1->n;
     EdgeClipping clip = clip_edge_to_face(edge0, face1);
     if (clip.empty()) // edge0 entirely outside face1
         return 0;
     for (int c = 0; c < 2; c++) {
-        Vec3 r = normalize(edge0->n[1-c]->x - edge0->n[c]->x);
-        const Edge *edge1 = clip.edge[c];
+        Vec3 r = normalize(edge0->n[1 - c]->x - edge0->n[c]->x);
+        const Edge* edge1 = clip.edge[c];
         if (!edge1) { // endpoint inside face1
             Bary b = barycentric_coords(edge0->n[c]->x, face0);
             for (int v = 0; v < 3; v++)
-                g0[v] += b[v]*(-r);
+                g0[v] += b[v] * (-r);
             continue;
         } else {
             Vec3 e = normalize(edge1->n[1]->x - edge1->n[0]->x);
-            Vec3 rp = cross(n,r), ep = cross(n,e);
-            if (abs(dot(r,ep)) < 1e-12)
+            Vec3 rp = cross(n, r), ep = cross(n, e);
+            if (abs(dot(r, ep)) < 1e-12)
                 continue; // edges are parallel, ignore
-            Vec3 edge0_grad = dot(rp,ep)/dot(r,ep) * rp,
-                 edge1_grad = -1/dot(r,ep) * ep;
-            Vec3 x = x0 + clip.t[c]*(x1 - x0);
+            Vec3 edge0_grad = dot(rp, ep) / dot(r, ep) * rp,
+                 edge1_grad = -1 / dot(r, ep) * ep;
+            Vec3 x = x0 + clip.t[c] * (x1 - x0);
             Bary b0 = barycentric_coords(x, face0),
                  b1 = barycentric_coords(x, face1);
             for (int v = 0; v < 3; v++) {
-                g0[v] += b0[v]*edge0_grad;
-                g1[v] += b1[v]*edge1_grad;
+                g0[v] += b0[v] * edge0_grad;
+                g1[v] += b1[v] * edge1_grad;
             }
         }
     }
-    return (clip.t[1] - clip.t[0])*norm(edge0->n[1]->x - edge0->n[0]->x);
+    return (clip.t[1] - clip.t[0]) * norm(edge0->n[1]->x - edge0->n[0]->x);
 }
 
-EdgeClipping clip_edge_to_face (const Edge *edge, const Face *face) {
+EdgeClipping clip_edge_to_face(const Edge* edge, const Face* face)
+{
     EdgeClipping clip;
     Vec3 x0 = edge->n[0]->x, x1 = edge->n[1]->x;
     Vec3 n = face->n;
     for (int i = 0; i < 3; i++) {
-        const Edge *edge1 = face->adje[i];
+        const Edge* edge1 = face->adje[i];
         Vec3 y0 = edge1->n[0]->x, y1 = edge1->n[1]->x;
         Vec3 e = normalize(y1 - y0);
         double a0 = stp(e, x0 - y0, n),
@@ -359,9 +380,9 @@ EdgeClipping clip_edge_to_face (const Edge *edge, const Face *face) {
             continue;
         } else {
             for (int c = 0; c < 2; c++) {
-                double ac = a0 + clip.t[c]*(a1 - a0);
+                double ac = a0 + clip.t[c] * (a1 - a0);
                 if (ac < 0) {
-                    clip.t[c] = -a0/(a1 - a0);
+                    clip.t[c] = -a0 / (a1 - a0);
                     clip.edge[c] = (Edge*)edge1;
                 }
             }
@@ -370,27 +391,30 @@ EdgeClipping clip_edge_to_face (const Edge *edge, const Face *face) {
     return clip;
 }
 
-Bary barycentric_coords (const Vec3 &x, const Face *face) {
+Bary barycentric_coords(const Vec3& x, const Face* face)
+{
     Bary b;
     double sum = 0;
     for (int i = 0; i < 3; i++) {
         b[i] = dot(face->n, cross(face->v[NEXT(i)]->node->x - x,
-                                  face->v[PREV(i)]->node->x - x));
+                                face->v[PREV(i)]->node->x - x));
         b[i] = max(b[i], 0.);
         sum += b[i];
     }
-    return b/sum;
+    return b / sum;
 }
 
-Vec3 pos (const Face *face, const Bary &b) {
-    return b[0]*face->v[0]->node->x
-         + b[1]*face->v[1]->node->x
-         + b[2]*face->v[2]->node->x;
+Vec3 pos(const Face* face, const Bary& b)
+{
+    return b[0] * face->v[0]->node->x
+        + b[1] * face->v[1]->node->x
+        + b[2] * face->v[2]->node->x;
 }
 
-void update_active (const vector<AccelStruct*> &accs,
-                    const vector<AccelStruct*> &obs_accs,
-                    const vector<Ixn> &ixns) {
+void update_active(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs,
+    const vector<Ixn>& ixns)
+{
     assert(false);
     // for (int a = 0; a < accs.size(); a++)
     //     mark_all_inactive(*accs[a]);
@@ -405,15 +429,16 @@ void update_active (const vector<AccelStruct*> &accs,
 }
 
 static int nthreads = 0;
-static vector<Ixn> *ixns = NULL;
+static vector<Ixn>* ixns = NULL;
 
-void find_face_intersection (const Face *face0, const Face *face1);
+void find_face_intersection(const Face* face0, const Face* face1);
 
-vector<Ixn> find_intersections (const vector<AccelStruct*> &accs,
-                                const vector<AccelStruct*> &obs_accs) {
+vector<Ixn> find_intersections(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs)
+{
     if (!::ixns) {
         ::nthreads = omp_get_max_threads();
-        ::ixns = new vector<Ixn>[::nthreads];
+        ::ixns = new vector<Ixn>[ ::nthreads];
     }
     for (int t = 0; t < ::nthreads; t++)
         ::ixns[t].clear();
@@ -424,14 +449,15 @@ vector<Ixn> find_intersections (const vector<AccelStruct*> &accs,
     return ixns;
 }
 
-void find_face_overlappings (const Face *face0, const Face *face1);
+void find_face_overlappings(const Face* face0, const Face* face1);
 
 // Find all the pairs of faces that might be intersections between them.
-vector<Ixn> find_overlappings (const vector<AccelStruct*> &accs,
-        const vector<AccelStruct*> &obs_accs) {
+vector<Ixn> find_overlappings(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs)
+{
     if (!::ixns) {
         ::nthreads = omp_get_max_threads();
-        ::ixns = new vector<Ixn>[::nthreads];
+        ::ixns = new vector<Ixn>[ ::nthreads];
     }
     for (int t = 0; t < ::nthreads; t++)
         ::ixns[t].clear();
@@ -442,12 +468,13 @@ vector<Ixn> find_overlappings (const vector<AccelStruct*> &accs,
     return ixns;
 }
 
-bool adjacent (const Face *face0, const Face *face1);
+bool adjacent(const Face* face0, const Face* face1);
 
-bool intersection_midpoint (const Face *face0, const Face *face1,
-                            Bary &b0, Bary &b1);
+bool intersection_midpoint(const Face* face0, const Face* face1,
+    Bary& b0, Bary& b1);
 
-void find_face_intersection (const Face *face0, const Face *face1) {
+void find_face_intersection(const Face* face0, const Face* face1)
+{
     if (adjacent(face0, face1))
         return;
     int t = omp_get_thread_num();
@@ -458,14 +485,16 @@ void find_face_intersection (const Face *face0, const Face *face1) {
     ::ixns[t].push_back(ixn);
 }
 
-void find_face_overlappings (const Face *face0, const Face *face1) {
+void find_face_overlappings(const Face* face0, const Face* face1)
+{
     if (adjacent(face0, face1))
         return;
     int t = omp_get_thread_num();
     ::ixns[t].push_back(Ixn(face0, face1));
 }
 
-bool adjacent (const Face *face0, const Face *face1) {
+bool adjacent(const Face* face0, const Face* face1)
+{
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++)
             if (face0->v[i]->node == face1->v[j]->node)
@@ -473,12 +502,13 @@ bool adjacent (const Face *face0, const Face *face1) {
     return false;
 }
 
-bool face_plane_intersection (const Face *face, const Face *plane,
-                              Bary &b0, Bary &b1);
-int major_axis (const Vec3 &v);
+bool face_plane_intersection(const Face* face, const Face* plane,
+    Bary& b0, Bary& b1);
+int major_axis(const Vec3& v);
 
-bool intersection_midpoint (const Face *face0, const Face *face1,
-                            Bary &b0, Bary &b1) {
+bool intersection_midpoint(const Face* face0, const Face* face1,
+    Bary& b0, Bary& b1)
+{
     if (norm2(cross(face0->n, face1->n)) < 1e-12)
         return false;
     Bary b00, b01, b10, b11;
@@ -491,11 +521,11 @@ bool intersection_midpoint (const Face *face0, const Face *face1,
            a10 = pos(face1, b10)[axis], a11 = pos(face1, b11)[axis];
     double amin = max(min(a00, a01), min(a10, a11)),
            amax = min(max(a00, a01), max(a10, a11)),
-           amid = (amin + amax)/2;
+           amid = (amin + amax) / 2;
     if (amin > amax)
         return false;
-    b0 = (a01==a00) ? b00 : b00 + (amid-a00)/(a01-a00)*(b01-b00);
-    b1 = (a11==a10) ? b10 : b10 + (amid-a10)/(a11-a10)*(b11-b10);
+    b0 = (a01 == a00) ? b00 : b00 + (amid - a00) / (a01 - a00) * (b01 - b00);
+    b1 = (a11 == a10) ? b10 : b10 + (amid - a10) / (a11 - a10) * (b11 - b10);
     return true;
 }
 
@@ -503,13 +533,17 @@ struct cmpOneAxis {
     size_t axis;
 
     cmpOneAxis(size_t axis)
-        : axis(axis) {}
-    bool operator() (const Vec3& lhs, const Vec3& rhs) const {
+        : axis(axis)
+    {
+    }
+    bool operator()(const Vec3& lhs, const Vec3& rhs) const
+    {
         return lhs[axis] < rhs[axis];
     }
 };
 
-bool get_line_of_intersection (const Face *face0, const Face *face1, Line3& line) {
+bool get_line_of_intersection(const Face* face0, const Face* face1, Line3& line)
+{
     if (norm2(cross(face0->n, face1->n)) < 1e-12)
         return false;
 
@@ -544,8 +578,9 @@ bool get_line_of_intersection (const Face *face0, const Face *face1, Line3& line
     return true;
 }
 
-bool face_plane_intersection (const Face *face, const Face *plane,
-                              Bary &b0, Bary &b1) {
+bool face_plane_intersection(const Face* face, const Face* plane,
+    Bary& b0, Bary& b1)
+{
     const Vec3 &x0 = plane->v[0]->node->x, &n = plane->n;
     double h[3];
     int sign_sum = 0;
@@ -559,7 +594,7 @@ bool face_plane_intersection (const Face *face, const Face *plane,
     for (int v = 0; v < 3; v++)
         if (sgn(h[v]) == -sign_sum)
             v0 = v;
-    double t0 = h[v0]/(h[v0] - h[NEXT(v0)]), t1 = h[v0]/(h[v0] - h[PREV(v0)]);
+    double t0 = h[v0] / (h[v0] - h[NEXT(v0)]), t1 = h[v0] / (h[v0] - h[PREV(v0)]);
     b0[v0] = 1 - t0;
     b0[NEXT(v0)] = t0;
     b0[PREV(v0)] = 0;
@@ -569,8 +604,9 @@ bool face_plane_intersection (const Face *face, const Face *plane,
     return true;
 }
 
-bool edge_face_intersection (const Vec3& e0, const Vec3& e1,
-        const Vec3& x0, const Vec3& x1, const Vec3& x2, const Vec3& n, Vec3& pt) {
+bool edge_face_intersection(const Vec3& e0, const Vec3& e1,
+    const Vec3& x0, const Vec3& x1, const Vec3& x2, const Vec3& n, Vec3& pt)
+{
     const double numer = dot(x0 - e0, n);
     const double denom = dot(e1 - e0, n);
     if (std::abs(numer) < 1e-12 || std::abs(denom) < 1e-12)
@@ -590,12 +626,13 @@ bool edge_face_intersection (const Vec3& e0, const Vec3& e1,
     const Vec3& c2 = cross(x0 - x2, pt - x2);
 
     bool is_inside = (dot(n, c0) >= -1e-12
-            && dot(n, c1) >= -1e-12
-            && dot(n, c2) >= -1e-12);
+        && dot(n, c1) >= -1e-12
+        && dot(n, c2) >= -1e-12);
     return is_inside;
 }
 
-bool edge_face_intersection (const Edge* edge, const Face *face, Vec3& pt) {
+bool edge_face_intersection(const Edge* edge, const Face* face, Vec3& pt)
+{
     // edge
     const Vec3& e0 = edge->n[0]->x;
     const Vec3& e1 = edge->n[1]->x;
@@ -609,22 +646,29 @@ bool edge_face_intersection (const Edge* edge, const Face *face, Vec3& pt) {
     return edge_face_intersection(e0, e1, f0, f1, f2, fn, pt);
 }
 
-int major_axis (const Vec3 &v) {
+int major_axis(const Vec3& v)
+{
     return (abs(v[0]) > abs(v[1]) && abs(v[0]) > abs(v[2])) ? 0
-         : (abs(v[1]) > abs(v[2])) ? 1 : 2;
+                                                            : (abs(v[1]) > abs(v[2])) ? 1 : 2;
 }
 
 struct UnionFind {
     vector<size_t> parent, rank;
-    UnionFind (size_t n): parent(n), rank(n, 0) {
-        for (size_t i = 0; i < n; i++) parent[i] = i;
+    UnionFind(size_t n)
+        : parent(n)
+        , rank(n, 0)
+    {
+        for (size_t i = 0; i < n; i++)
+            parent[i] = i;
     }
-    size_t find (size_t i) {
+    size_t find(size_t i)
+    {
         if (parent[i] != i)
             parent[i] = find(parent[i]);
         return parent[i];
     }
-    void unify (size_t x, size_t y) {
+    void unify(size_t x, size_t y)
+    {
         size_t x0 = find(x), y0 = find(y);
         if (x0 == y0)
             return;
@@ -639,7 +683,8 @@ struct UnionFind {
     }
 };
 
-vector< vector<Node*> > connected_components (const vector<Ixn> &ixns) {
+vector<vector<Node*>> connected_components(const vector<Ixn>& ixns)
+{
     vector<Node*> nodes;
     for (size_t i = 0; i < ixns.size(); i++) {
         for (int v = 0; v < 3; v++) {
@@ -661,7 +706,7 @@ vector< vector<Node*> > connected_components (const vector<Ixn> &ixns) {
     for (size_t i = 0; i < nodes.size(); i++)
         if (uf.find(i) == i)
             nodes[i]->index = c++;
-    vector< vector<Node*> > components(c);
+    vector<vector<Node*>> components(c);
     for (size_t i = 0; i < nodes.size(); i++)
         components[nodes[uf.find(i)]->index].push_back(nodes[i]);
     return components;

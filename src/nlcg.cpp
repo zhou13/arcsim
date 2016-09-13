@@ -32,13 +32,14 @@
 using namespace std;
 using namespace alglib;
 
-static const NLOpt *problem;
+static const NLOpt* problem;
 
-static void nlcg_value_and_grad (const real_1d_array &x, double &value,
-                                 real_1d_array &grad, void *ptr=NULL);
+static void nlcg_value_and_grad(const real_1d_array& x, double& value,
+    real_1d_array& grad, void* ptr = NULL);
 
-void nonlinear_conjugate_gradient_method (const NLOpt &problem, OptOptions opt,
-                                          bool verbose) {
+void nonlinear_conjugate_gradient_method(const NLOpt& problem, OptOptions opt,
+    bool verbose)
+{
     ::problem = &problem;
     real_1d_array x;
     x.setlength(::problem->nvar);
@@ -47,7 +48,7 @@ void nonlinear_conjugate_gradient_method (const NLOpt &problem, OptOptions opt,
     mincgreport rep;
     mincgcreate(x, state);
     mincgsetcond(state, opt.eps_g(), opt.eps_f(), opt.eps_x(), opt.max_iter());
-    mincgsuggeststep(state, 1e-6*::problem->nvar);
+    mincgsuggeststep(state, 1e-6 * ::problem->nvar);
     mincgoptimize(state, nlcg_value_and_grad);
     mincgresults(state, x, rep);
     if (verbose)
@@ -60,8 +61,9 @@ void nonlinear_conjugate_gradient_method (const NLOpt &problem, OptOptions opt,
         x[i] += y[i];
 }*/
 
-static void nlcg_value_and_grad (const real_1d_array &x, double &value,
-                                 real_1d_array &grad, void *ptr) {
+static void nlcg_value_and_grad(const real_1d_array& x, double& value,
+    real_1d_array& grad, void* ptr)
+{
     ::problem->precompute(&x[0]);
     value = ::problem->objective(&x[0]);
     ::problem->gradient(&x[0], &grad[0]);

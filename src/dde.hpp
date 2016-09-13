@@ -32,18 +32,24 @@
 
 typedef Vec<4> Vec4;
 
-struct StretchingData {Vec4 d[2][5];};
+struct StretchingData {
+    Vec4 d[2][5];
+};
 
-struct StretchingSamples {Vec4 s[40][40][40];};
+struct StretchingSamples {
+    Vec4 s[40][40][40];
+};
 
-struct BendingData {double d[3][5];};
+struct BendingData {
+    double d[3][5];
+};
 
-void evaluate_stretching_samples (StretchingSamples &samples,
-                                  const StretchingData &data);
+void evaluate_stretching_samples(StretchingSamples& samples,
+    const StretchingData& data);
 
-Vec4 stretching_stiffness (const Mat2x2 &G, const StretchingSamples &samples);
+Vec4 stretching_stiffness(const Mat2x2& G, const StretchingSamples& samples);
 
-double bending_stiffness (const Edge *edge, int side, const BendingData &data, 
-						  double l, double theta, double initial_angle=0);
+double bending_stiffness(const Edge* edge, int side, const BendingData& data,
+    double l, double theta, double initial_angle = 0);
 
 #endif

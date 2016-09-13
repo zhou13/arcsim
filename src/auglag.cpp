@@ -32,17 +32,18 @@
 using namespace std;
 using namespace alglib;
 
-static const NLConOpt *problem;
+static const NLConOpt* problem;
 static vector<double> lambda;
 static double mu;
 
-static void auglag_value_and_grad (const real_1d_array &x, double &value,
-                                   real_1d_array &grad, void *ptr=NULL);
+static void auglag_value_and_grad(const real_1d_array& x, double& value,
+    real_1d_array& grad, void* ptr = NULL);
 
-static void multiplier_update (const real_1d_array &x);
+static void multiplier_update(const real_1d_array& x);
 
-void augmented_lagrangian_method (const NLConOpt &problem, OptOptions opt,
-                                  bool verbose) {
+void augmented_lagrangian_method(const NLConOpt& problem, OptOptions opt,
+    bool verbose)
+{
     ::problem = &problem;
     ::lambda = vector<double>(::problem->ncon, 0);
     ::mu = 1e3;
@@ -60,7 +61,7 @@ void augmented_lagrangian_method (const NLConOpt &problem, OptOptions opt,
         mincgsetcond(state, opt.eps_g(), opt.eps_f(), opt.eps_x(), max_iter);
         if (iter > 0)
             mincgrestartfrom(state, x);
-        mincgsuggeststep(state, 1e-3*::problem->nvar);
+        mincgsuggeststep(state, 1e-3 * ::problem->nvar);
         mincgoptimize(state, auglag_value_and_grad);
         mincgresults(state, x, rep);
         multiplier_update(x);
@@ -78,17 +79,20 @@ void augmented_lagrangian_method (const NLConOpt &problem, OptOptions opt,
         x[i] += y[i];
 }*/
 
-inline double clamp_violation (double x, int sign) {
-    return (sign<0) ? max(x, 0.) : (sign>0) ? min(x, 0.) : x;}
+inline double clamp_violation(double x, int sign)
+{
+    return (sign < 0) ? max(x, 0.) : (sign > 0) ? min(x, 0.) : x;
+}
 
-static void auglag_value_and_grad (const real_1d_array &x, double &value,
-                                   real_1d_array &grad, void *ptr) {
+static void auglag_value_and_grad(const real_1d_array& x, double& value,
+    real_1d_array& grad, void* ptr)
+{
     ::problem->precompute(&x[0]);
     value = ::problem->objective(&x[0]);
     ::problem->obj_grad(&x[0], &grad[0]);
     static const int nthreads = omp_get_max_threads();
-    static double *values = new double[nthreads];
-    static vector<double> *grads = new vector<double>[nthreads];
+    static double* values = new double[nthreads];
+    static vector<double>* grads = new vector<double>[nthreads];
     for (int t = 0; t < nthreads; t++) {
         values[t] = 0;
         grads[t].assign(::problem->nvar, 0);
@@ -98,10 +102,10 @@ static void auglag_value_and_grad (const real_1d_array &x, double &value,
         int t = omp_get_thread_num();
         int sign;
         double gj = ::problem->constraint(&x[0], j, sign);
-        double cj = clamp_violation(gj + ::lambda[j]/::mu, sign);
+        double cj = clamp_violation(gj + ::lambda[j] / ::mu, sign);
         if (cj != 0) {
-            values[t] += ::mu/2*sq(cj);
-            ::problem->con_grad(&x[0], j, ::mu*cj, &grads[t][0]);
+            values[t] += ::mu / 2 * sq(cj);
+            ::problem->con_grad(&x[0], j, ::mu * cj, &grads[t][0]);
         }
     }
     for (int t = 0; t < nthreads; t++)
@@ -112,12 +116,13 @@ static void auglag_value_and_grad (const real_1d_array &x, double &value,
             grad[i] += grads[t][i];
 }
 
-static void multiplier_update (const real_1d_array &x) {
+static void multiplier_update(const real_1d_array& x)
+{
     ::problem->precompute(&x[0]);
 #pragma omp parallel for
     for (int j = 0; j < ::problem->ncon; j++) {
         int sign;
         double gj = ::problem->constraint(&x[0], j, sign);
-        ::lambda[j] = clamp_violation(::lambda[j] + ::mu*gj, sign);
+        ::lambda[j] = clamp_violation(::lambda[j] + ::mu * gj, sign);
     }
 }

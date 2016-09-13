@@ -3,8 +3,9 @@
 #include "geometry.hpp"
 using namespace std;
 
-Vec3 blend (const vector<Mesh> &targets, const vector<double> &w,
-            const Vec3 &u) {
+Vec3 blend(const vector<Mesh>& targets, const vector<double>& w,
+    const Vec3& u)
+{
     cout << "morph/blend disabled for now" << endl;
     exit(1);
     Vec3 x = Vec3(0);
@@ -22,16 +23,18 @@ Vec3 blend (const vector<Mesh> &targets, const vector<double> &w,
     return x;
 }
 
-Vec3 Morph::pos (double t, const Vec3 &u) const {
+Vec3 Morph::pos(double t, const Vec3& u) const
+{
     return blend(targets, weights.pos(t), u);
 }
 
-void apply (const Morph &morph, double t) {
+void apply(const Morph& morph, double t)
+{
     for (int n = 0; n < (int)morph.mesh->nodes.size(); n++) {
-        Node *node = morph.mesh->nodes[n];
+        Node* node = morph.mesh->nodes[n];
         Vec3 x = Vec3(0);
         for (int v = 0; v < (int)node->verts.size(); v++)
             x += morph.pos(t, node->verts[v]->u);
-        node->x = x/(double)node->verts.size();
+        node->x = x / (double)node->verts.size();
     }
 }

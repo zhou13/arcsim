@@ -60,21 +60,31 @@ struct Simulation {
     Vec3 gravity;
     Wind wind;
     double friction, obs_friction;
-    enum {Proximity, Physics, StrainLimiting, Collision, Remeshing, Separation,
-          PopFilter, Plasticity, Fracture, nModules};
+    enum {
+        Proximity,
+        Physics,
+        StrainLimiting,
+        Collision,
+        Remeshing,
+        Separation,
+        PopFilter,
+        Plasticity,
+        Fracture,
+        nModules
+    };
     bool enabled[nModules];
     Timer timers[nModules];
     // handy pointers
-    std::vector<Mesh*> cloth_meshes, obstacle_meshes;
+    std::vector<Mesh *> cloth_meshes, obstacle_meshes;
 };
 extern Simulation sim;
 
-void prepare (Simulation &sim);
+void prepare(Simulation& sim);
 
-void relax_initial_state (Simulation &sim);
+void relax_initial_state(Simulation& sim);
 
-void advance_frame (Simulation &sim);
+void advance_frame(Simulation& sim);
 
-void advance_step (Simulation &sim);
+void advance_step(Simulation& sim);
 
 #endif

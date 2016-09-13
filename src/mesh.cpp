@@ -25,53 +25,66 @@
 */
 
 #include "mesh.hpp"
-#include "geometry.hpp"
-#include "util.hpp"
-#include "proxy.hpp"
 #include "display.hpp"
+#include "geometry.hpp"
+#include "proxy.hpp"
+#include "util.hpp"
 #include <assert.h>
 #include <cstdlib>
 using namespace std;
 
 int uuid_src = 0;
 
-template <typename T1, typename T2> void check (const T1 *p1, const T2 *p2,
-                                                const vector<T2*> &v2) {
+template <typename T1, typename T2>
+void check(const T1* p1, const T2* p2,
+    const vector<T2*>& v2)
+{
     if (p2 && find((T2*)p2, v2) == -1) {
         cout << p1 << "'s adjacent " << p2 << " is not accounted for" << endl;
         abort();
     }
 }
-template <typename T1, typename T2> void not_null (const T1 *p1, const T2 *p2) {
+template <typename T1, typename T2>
+void not_null(const T1* p1, const T2* p2)
+{
     if (!p2) {
         cout << "adjacent to " << p1 << " is null " << p2 << endl;
         abort();
     }
 }
-template <typename T1, typename T2> void not_any_null
-    (const T1 *p1, T2 *const*p2, int n) {
+template <typename T1, typename T2>
+void not_any_null(const T1* p1, T2* const* p2, int n)
+{
     bool any_null = false;
-    for (int i = 0; i < n; i++) if (!p2[i]) any_null = true;
+    for (int i = 0; i < n; i++)
+        if (!p2[i])
+            any_null = true;
     if (any_null) {
         cout << "adjacent to " << p1 << " one of these is null" << endl;
-        for (int i = 0; i < n; i++) cout << p2[i] << endl;
+        for (int i = 0; i < n; i++)
+            cout << p2[i] << endl;
         abort();
     }
 }
-template <typename T1, typename T2> void not_all_null
-    (const T1 *p1, T2 *const*p2, int n) {
+template <typename T1, typename T2>
+void not_all_null(const T1* p1, T2* const* p2, int n)
+{
     bool all_null = true;
-    for (int i = 0; i < n; i++) if (p2[i]) all_null = false;
+    for (int i = 0; i < n; i++)
+        if (p2[i])
+            all_null = false;
     if (all_null) {
         cout << "adjacent to " << p1 << " all of these are null" << endl;
-        for (int i = 0; i < n; i++) cout << p2[i] << endl;
+        for (int i = 0; i < n; i++)
+            cout << p2[i] << endl;
         abort();
     }
 }
 
-bool check_that_pointers_are_sane (const Mesh &mesh) {
+bool check_that_pointers_are_sane(const Mesh& mesh)
+{
     for (int v = 0; v < (int)mesh.verts.size(); v++) {
-        const Vert *vert = mesh.verts[v];
+        const Vert* vert = mesh.verts[v];
         not_null(vert, vert->node);
         check(vert, vert->node, mesh.nodes);
         if (find((Vert*)vert, vert->node->verts) == -1) {
@@ -83,14 +96,14 @@ bool check_that_pointers_are_sane (const Mesh &mesh) {
             check(vert, vert->adjf[i], mesh.faces);
     }
     for (int n = 0; n < (int)mesh.nodes.size(); n++) {
-        const Node *node = mesh.nodes[n];
+        const Node* node = mesh.nodes[n];
         for (int i = 0; i < (int)node->verts.size(); i++)
             check(node, node->verts[i], mesh.verts);
         for (int i = 0; i < 2; i++)
             check(node, node->adje[i], mesh.edges);
     }
     for (int e = 0; e < (int)mesh.edges.size(); e++) {
-        const Edge *edge = mesh.edges[e];
+        const Edge* edge = mesh.edges[e];
         for (int i = 0; i < 2; i++)
             check(edge, edge->n[i], mesh.nodes);
         not_any_null(edge, edge->n, 2);
@@ -99,7 +112,7 @@ bool check_that_pointers_are_sane (const Mesh &mesh) {
         not_all_null(edge, edge->adjf, 2);
     }
     for (int f = 0; f < (int)mesh.faces.size(); f++) {
-        const Face *face = mesh.faces[f];
+        const Face* face = mesh.faces[f];
         for (int i = 0; i < 3; i++)
             check(face, face->v[i], mesh.verts);
         not_any_null(face, face->v, 3);
@@ -110,7 +123,8 @@ bool check_that_pointers_are_sane (const Mesh &mesh) {
     return true;
 }
 
-bool check_that_contents_are_sane (const Mesh &mesh) {
+bool check_that_contents_are_sane(const Mesh& mesh)
+{
     // // TODO
     // for (int v = 0; v < mesh.verts.size(); v++) {
     //     const Vert *vert = mesh.verts[v];
@@ -133,11 +147,12 @@ bool check_that_contents_are_sane (const Mesh &mesh) {
 
 // World-space data
 
-void compute_ws_data (Face* face) {
+void compute_ws_data(Face* face)
+{
     const Vec3 &x0 = face->v[0]->node->x,
                &x1 = face->v[1]->node->x,
                &x2 = face->v[2]->node->x;
-    face->n = normalize(cross(x1-x0, x2-x0));
+    face->n = normalize(cross(x1 - x0, x2 - x0));
     // Mat3x2 F = derivative(x0, x1, x2, face);
     // SVD<3,2> svd = singular_value_decomposition(F);
     // Mat3x2 Vt_ = 0;
@@ -148,52 +163,57 @@ void compute_ws_data (Face* face) {
     // face->F = svd.Vt.t()*diag(svd.s)*svd.Vt;
 }
 
-void compute_ws_data (Node* node) {
+void compute_ws_data(Node* node)
+{
     node->n = normal<WS>(node);
     Mat3x3 C(0), C0(0);
-    double sum=0;
+    double sum = 0;
     for (size_t v = 0; v < node->verts.size(); v++) {
-        const vector<Face*> &adjfs = node->verts[v]->adjf;
+        const vector<Face*>& adjfs = node->verts[v]->adjf;
         for (size_t i = 0; i < adjfs.size(); i++) {
             Face const* face = adjfs[i];
-            C += face->a/3 * curvature<WS>(face);
-            C0 += face->a/3 * curvature<MS>(face);
+            C += face->a / 3 * curvature<WS>(face);
+            C0 += face->a / 3 * curvature<MS>(face);
             sum += face->a;
         }
     }
-    Eig<3> eig = eigen_decomposition((C-C0) / sum);
-    for (int i=0; i<3; i++)
+    Eig<3> eig = eigen_decomposition((C - C0) / sum);
+    for (int i = 0; i < 3; i++)
         eig.l[i] = fabs(eig.l[i]);
     node->curvature = eig.Q * diag(eig.l) * eig.Q.t();
 }
 
-void compute_ws_data (vector<Face*>& faces) {
+void compute_ws_data(vector<Face*>& faces)
+{
     for (size_t n = 0; n < faces.size(); n++)
-        compute_ws_data(faces[n]);    
+        compute_ws_data(faces[n]);
 }
 
-void compute_ws_data (vector<Node*>& nodes) {
+void compute_ws_data(vector<Node*>& nodes)
+{
     for (size_t n = 0; n < nodes.size(); n++)
-        compute_ws_data(nodes[n]);    
+        compute_ws_data(nodes[n]);
 }
 
-void compute_ws_data (Mesh &mesh) {
+void compute_ws_data(Mesh& mesh)
+{
     compute_ws_data(mesh.faces);
     compute_ws_data(mesh.nodes);
 }
 
 // Material space data
 
-void compute_ms_data (Face* face) {
+void compute_ms_data(Face* face)
+{
     Vec3 d0 = face->v[1]->u - face->v[0]->u;
     Vec3 d1 = face->v[2]->u - face->v[0]->u;
-    Vec3 d2 = cross(d0,d1);
+    Vec3 d2 = cross(d0, d1);
     double dn = norm(d2);
-    
-    Mat3x3 Dm3(d0,d1,d2/dn);
-    face->a = 0.5*dn;
-    face->m = face->material ? face->a*face->material->density : 0;
-    
+
+    Mat3x3 Dm3(d0, d1, d2 / dn);
+    face->a = 0.5 * dn;
+    face->m = face->material ? face->a * face->material->density : 0;
+
     if (face->a == 0) {
         face->invDm = Mat3x3(0);
     } else {
@@ -201,9 +221,9 @@ void compute_ms_data (Face* face) {
         // clamp
         Cloth* parent = face->v[0]->node->mesh->parent;
         if (parent) {
-            const double CLAMP = 1000.0/parent->remeshing.size_min;
-            SVD<3,3> svd = singular_value_decomposition(face->invDm);
-            for (int i=0; i<3; i++) {
+            const double CLAMP = 1000.0 / parent->remeshing.size_min;
+            SVD<3, 3> svd = singular_value_decomposition(face->invDm);
+            for (int i = 0; i < 3; i++) {
                 if (svd.s[i] > CLAMP) {
                     cout << "clamping " << svd.s[i] << " to " << CLAMP << endl;
                     svd.s[i] = CLAMP;
@@ -214,51 +234,58 @@ void compute_ms_data (Face* face) {
     }
 }
 
-void compute_ms_data (Node* node) {
+void compute_ms_data(Node* node)
+{
     node->a = 0;
     node->m = 0;
     for (size_t v = 0; v < node->verts.size(); v++) {
-        const vector<Face*> &adjfs = node->verts[v]->adjf;
+        const vector<Face*>& adjfs = node->verts[v]->adjf;
         for (size_t i = 0; i < adjfs.size(); i++) {
             Face const* face = adjfs[i];
-            node->a += face->a/3;
-            node->m += face->m/3;
+            node->a += face->a / 3;
+            node->m += face->m / 3;
         }
     }
 }
 
-void compute_ms_data (vector<Face*>& faces) {
+void compute_ms_data(vector<Face*>& faces)
+{
     for (size_t n = 0; n < faces.size(); n++)
-        compute_ms_data(faces[n]);    
+        compute_ms_data(faces[n]);
     compute_ws_data(faces);
 }
 
-void compute_ms_data (vector<Node*>& nodes) {
+void compute_ms_data(vector<Node*>& nodes)
+{
     for (size_t n = 0; n < nodes.size(); n++)
-        compute_ms_data(nodes[n]);    
+        compute_ms_data(nodes[n]);
     compute_ws_data(nodes);
 }
 
-void compute_ms_data (Mesh &mesh) {
+void compute_ms_data(Mesh& mesh)
+{
     compute_ms_data(mesh.faces);
     compute_ms_data(mesh.nodes);
 }
 
 // Mesh operations
 
-void connect (Vert *vert, Node *node) {
+void connect(Vert* vert, Node* node)
+{
     vert->node = node;
     include(vert, node->verts);
 }
 
-void Mesh::add (Vert *vert) {
+void Mesh::add(Vert* vert)
+{
     verts.push_back(vert);
     vert->node = NULL;
     vert->adjf.clear();
-    vert->index = verts.size()-1;
+    vert->index = verts.size() - 1;
 }
 
-void Mesh::remove (Vert* vert) {
+void Mesh::remove(Vert* vert)
+{
     if (!vert->adjf.empty()) {
         cout << "Error: can't delete vert " << vert << " as it still has "
              << vert->adjf.size() << " faces attached to it." << endl;
@@ -267,9 +294,10 @@ void Mesh::remove (Vert* vert) {
     exclude(vert, verts);
 }
 
-void Mesh::add (Node *node) {
+void Mesh::add(Node* node)
+{
     nodes.push_back(node);
-    node->index = nodes.size()-1;
+    node->index = nodes.size() - 1;
     node->adje.clear();
     for (size_t v = 0; v < node->verts.size(); v++) {
         node->verts[v]->node = node;
@@ -277,7 +305,8 @@ void Mesh::add (Node *node) {
     node->mesh = this;
 }
 
-void Mesh::remove (Node* node) {
+void Mesh::remove(Node* node)
+{
     if (!node->adje.empty()) {
         cout << "Error: can't delete node " << node << " as it still has "
              << node->adje.size() << " edges attached to it." << endl;
@@ -286,18 +315,20 @@ void Mesh::remove (Node* node) {
     exclude(node, nodes);
 }
 
-void Mesh::add (Edge *edge) {
+void Mesh::add(Edge* edge)
+{
     edges.push_back(edge);
     edge->adjf[0] = edge->adjf[1] = NULL;
-    edge->index = edges.size()-1;
+    edge->index = edges.size() - 1;
     include(edge, edge->n[0]->adje);
     include(edge, edge->n[1]->adje);
 }
 
-void Mesh::remove (Edge *edge) {
+void Mesh::remove(Edge* edge)
+{
     if (edge->adjf[0] || edge->adjf[1]) {
         cout << "Error: can't delete edge " << edge
-             << " as it still has a face (" << edge->adjf[0] << "|" << edge->adjf[1] 
+             << " as it still has a face (" << edge->adjf[0] << "|" << edge->adjf[1]
              << ") attached to it." << endl;
         return;
     }
@@ -306,43 +337,47 @@ void Mesh::remove (Edge *edge) {
     exclude(edge, edge->n[1]->adje);
 }
 
-void add_edges_if_needed (Mesh &mesh, const Face *face) {
+void add_edges_if_needed(Mesh& mesh, const Face* face)
+{
     for (int i = 0; i < 3; i++) {
         Node *n0 = face->v[i]->node, *n1 = face->v[NEXT(i)]->node;
         if (get_edge(n0, n1) == NULL) {
-        	mesh.add(new Edge(n0, n1, 0, 0));
+            mesh.add(new Edge(n0, n1, 0, 0));
         }
     }
 }
 
-void Mesh::add (Face *face) {
+void Mesh::add(Face* face)
+{
     faces.push_back(face);
-    face->index = faces.size()-1;
+    face->index = faces.size() - 1;
     // adjacency
     add_edges_if_needed(*this, face);
     for (int i = 0; i < 3; i++) {
         Vert *v0 = face->v[NEXT(i)], *v1 = face->v[PREV(i)];
         include(face, v0->adjf);
-        Edge *e = get_edge(v0->node, v1->node);
+        Edge* e = get_edge(v0->node, v1->node);
         face->adje[i] = e;
-        int side = e->n[0]==v0->node ? 0 : 1;
+        int side = e->n[0] == v0->node ? 0 : 1;
         e->adjf[side] = face;
     }
 }
 
-void Mesh::remove (Face* face) {
+void Mesh::remove(Face* face)
+{
     exclude(face, faces);
     // adjacency
     for (int i = 0; i < 3; i++) {
-        Vert *v0 = face->v[NEXT(i)];
+        Vert* v0 = face->v[NEXT(i)];
         exclude(face, v0->adjf);
-        Edge *e = face->adje[i];
-        int side = e->n[0]==v0->node ? 0 : 1;
+        Edge* e = face->adje[i];
+        int side = e->n[0] == v0->node ? 0 : 1;
         e->adjf[side] = NULL;
     }
 }
 
-void set_indices (Mesh &mesh) {
+void set_indices(Mesh& mesh)
+{
     for (size_t v = 0; v < mesh.verts.size(); v++)
         mesh.verts[v]->index = v;
     for (size_t f = 0; f < mesh.faces.size(); f++)
@@ -353,24 +388,26 @@ void set_indices (Mesh &mesh) {
         mesh.edges[e]->index = e;
 }
 
-void set_indices (vector<Mesh*>& meshes) {
-	int idx_v = 0, idx_f = 0, idx_n = 0, idx_e = 0;
-	for (size_t m = 0; m < meshes.size(); m++) {
-		Mesh& mesh = *meshes[m];
-	    for (size_t v = 0; v < mesh.verts.size(); v++)
-	        mesh.verts[v]->index = idx_v++;
-	    for (size_t f = 0; f < mesh.faces.size(); f++)
-	        mesh.faces[f]->index = idx_f++;
-	    for (size_t n = 0; n < mesh.nodes.size(); n++)
-	        mesh.nodes[n]->index = idx_n++;
-	    for (size_t e = 0; e < mesh.edges.size(); e++)
-        	mesh.edges[e]->index = idx_e++;
+void set_indices(vector<Mesh*>& meshes)
+{
+    int idx_v = 0, idx_f = 0, idx_n = 0, idx_e = 0;
+    for (size_t m = 0; m < meshes.size(); m++) {
+        Mesh& mesh = *meshes[m];
+        for (size_t v = 0; v < mesh.verts.size(); v++)
+            mesh.verts[v]->index = idx_v++;
+        for (size_t f = 0; f < mesh.faces.size(); f++)
+            mesh.faces[f]->index = idx_f++;
+        for (size_t n = 0; n < mesh.nodes.size(); n++)
+            mesh.nodes[n]->index = idx_n++;
+        for (size_t e = 0; e < mesh.edges.size(); e++)
+            mesh.edges[e]->index = idx_e++;
     }
 }
 
-void mark_nodes_to_preserve (Mesh &mesh) {
+void mark_nodes_to_preserve(Mesh& mesh)
+{
     for (int n = 0; n < (int)mesh.nodes.size(); n++) {
-        Node *node = mesh.nodes[n];
+        Node* node = mesh.nodes[n];
         if (is_seam_or_boundary(node) || node->label)
             node->preserve = true;
     }
@@ -383,64 +420,69 @@ void mark_nodes_to_preserve (Mesh &mesh) {
     }*/
 }
 
-void activate_nodes(vector<Node*>& nodes) {
-    for (size_t i=0; i<nodes.size(); i++) {
+void activate_nodes(vector<Node*>& nodes)
+{
+    for (size_t i = 0; i < nodes.size(); i++) {
         nodes[i]->index = i;
         nodes[i]->flag |= Node::FlagActive;
     }
 }
 
-void deactivate_nodes(vector<Node*>& nodes) {
-    for (size_t i=0; i<nodes.size(); i++)
+void deactivate_nodes(vector<Node*>& nodes)
+{
+    for (size_t i = 0; i < nodes.size(); i++)
         nodes[i]->flag &= ~Node::FlagActive;
-    
 }
 
-void apply_transformation_onto (const Mesh &start_state, Mesh &onto,
-                                const Transformation &tr) {
+void apply_transformation_onto(const Mesh& start_state, Mesh& onto,
+    const Transformation& tr)
+{
     for (int n = 0; n < (int)onto.nodes.size(); n++)
         onto.nodes[n]->x = tr.apply(start_state.nodes[n]->x);
     compute_ws_data(onto);
 }
 
-void apply_transformation (Mesh& mesh, const Transformation& tr) {
+void apply_transformation(Mesh& mesh, const Transformation& tr)
+{
     apply_transformation_onto(mesh, mesh, tr);
 }
 
-void update_x0 (Mesh &mesh) {
+void update_x0(Mesh& mesh)
+{
     for (int n = 0; n < (int)mesh.nodes.size(); n++)
         mesh.nodes[n]->x0 = mesh.nodes[n]->x;
 }
 
-Mesh deep_copy (Mesh &mesh0) {
+Mesh deep_copy(Mesh& mesh0)
+{
     Mesh mesh1;
     set_indices(mesh0);
     for (int v = 0; v < (int)mesh0.verts.size(); v++) {
-        const Vert *vert0 = mesh0.verts[v];
-        Vert *vert1 = new Vert(vert0->u);
+        const Vert* vert0 = mesh0.verts[v];
+        Vert* vert1 = new Vert(vert0->u);
         mesh1.add(vert1);
     }
     for (int n = 0; n < (int)mesh0.nodes.size(); n++) {
-        const Node *node0 = mesh0.nodes[n];
-        Node *node1 = new Node(node0->y, node0->x, node0->v, node0->label, node0->flag, node0->preserve);
+        const Node* node0 = mesh0.nodes[n];
+        Node* node1 = new Node(node0->y, node0->x, node0->v, node0->label, node0->flag, node0->preserve);
         node1->verts.resize(node0->verts.size());
         for (int v = 0; v < (int)node0->verts.size(); v++)
             node1->verts[v] = mesh1.verts[node0->verts[v]->index];
         mesh1.add(node1);
     }
     for (int e = 0; e < (int)mesh0.edges.size(); e++) {
-        const Edge *edge0 = mesh0.edges[e];
-        Edge *edge1 = new Edge(mesh1.nodes[edge0->n[0]->index],
-                               mesh1.nodes[edge0->n[1]->index],
-                               edge0->theta_ideal, edge0->preserve);
+        const Edge* edge0 = mesh0.edges[e];
+        Edge* edge1 = new Edge(mesh1.nodes[edge0->n[0]->index],
+            mesh1.nodes[edge0->n[1]->index],
+            edge0->theta_ideal, edge0->preserve);
         mesh1.add(edge1);
     }
     for (int f = 0; f < (int)mesh0.faces.size(); f++) {
-        const Face *face0 = mesh0.faces[f];
-        Face *face1 = new Face(mesh1.verts[face0->v[0]->index],
-                               mesh1.verts[face0->v[1]->index],
-                               mesh1.verts[face0->v[2]->index],
-                               face0->Sp_str, face0->Sp_bend, face0->material, face0->damage);
+        const Face* face0 = mesh0.faces[f];
+        Face* face1 = new Face(mesh1.verts[face0->v[0]->index],
+            mesh1.verts[face0->v[1]->index],
+            mesh1.verts[face0->v[2]->index],
+            face0->Sp_str, face0->Sp_bend, face0->material, face0->damage);
         mesh1.add(face1);
     }
     compute_ms_data(mesh1);
@@ -449,7 +491,8 @@ Mesh deep_copy (Mesh &mesh0) {
     return mesh1;
 }
 
-void delete_mesh (Mesh &mesh) {
+void delete_mesh(Mesh& mesh)
+{
     for (int v = 0; v < (int)mesh.verts.size(); v++)
         delete mesh.verts[v];
     for (int n = 0; n < (int)mesh.nodes.size(); n++)
@@ -469,98 +512,108 @@ void delete_mesh (Mesh &mesh) {
 
 // Serialization
 
-void Vert::serializer(Serialize& s) {
-	::serializer(u, s, "vert.u");
-	::serializer(sizing, s, "vert.sizing");
+void Vert::serializer(Serialize& s)
+{
+    ::serializer(u, s, "vert.u");
+    ::serializer(sizing, s, "vert.sizing");
 }
 
-void Node::serializer(Serialize& s) {
-	::serializer(label, s, "node.label");
-	::serializer(flag, s, "node.flag");
-	::serializer(y, s, "node.y");
-	::serializer(x, s, "node.x");
-	::serializer(x0, s, "node.x0");
-	::serializer(v, s, "node.v");
-	::serializer(preserve, s, "node.preserve");
+void Node::serializer(Serialize& s)
+{
+    ::serializer(label, s, "node.label");
+    ::serializer(flag, s, "node.flag");
+    ::serializer(y, s, "node.y");
+    ::serializer(x, s, "node.x");
+    ::serializer(x0, s, "node.x0");
+    ::serializer(v, s, "node.v");
+    ::serializer(preserve, s, "node.preserve");
 }
 
-void Edge::serializer(Serialize& s) {
-	::serializer(preserve, s, "edge.preserve");
-	::serializer(theta_ideal, s, "edge.theta_ideal");
-	::serializer(damage, s, "edge.damage");
+void Edge::serializer(Serialize& s)
+{
+    ::serializer(preserve, s, "edge.preserve");
+    ::serializer(theta_ideal, s, "edge.theta_ideal");
+    ::serializer(damage, s, "edge.damage");
 }
 
-void Face::serializer(Serialize& s) {
-	::serializer(flag, s, "face.flag");
-	::serializer(Sp_bend, s, "face.Sp_bend");
-	::serializer(Sp_str, s, "face.Sp_str");
-	::serializer(damage, s, "face.damage");
+void Face::serializer(Serialize& s)
+{
+    ::serializer(flag, s, "face.flag");
+    ::serializer(Sp_bend, s, "face.Sp_bend");
+    ::serializer(Sp_str, s, "face.Sp_str");
+    ::serializer(damage, s, "face.damage");
 }
 
-template<class T> void serialize_vector(vector<T*>& v, Serialize &s, const string& id) {
-	serializer_array(v, s, id);
-	for (size_t i=0; i<v.size(); i++) {
-		if (s.load())
-			v[i] = new T;
-		v[i]->serializer(s);
-		if (s.load())
-			v[i]->index = i;
-	}
+template <class T>
+void serialize_vector(vector<T*>& v, Serialize& s, const string& id)
+{
+    serializer_array(v, s, id);
+    for (size_t i = 0; i < v.size(); i++) {
+        if (s.load())
+            v[i] = new T;
+        v[i]->serializer(s);
+        if (s.load())
+            v[i]->index = i;
+    }
 }
 
-template<class T> void serialize_link(T*& p, vector<T*>& src, Serialize& s, const string& id) {
-	int idx = p ? p->index : -1;
-	::serializer(idx, s, id);
-	if (s.load())
-		p = idx >= 0 ? src[idx] : 0;
+template <class T>
+void serialize_link(T*& p, vector<T*>& src, Serialize& s, const string& id)
+{
+    int idx = p ? p->index : -1;
+    ::serializer(idx, s, id);
+    if (s.load())
+        p = idx >= 0 ? src[idx] : 0;
 }
 
-template<class T> void serialize_links(vector<T*>& v, vector<T*>& src, Serialize& s, const string& id) {
-	serializer_array(v, s, id);
-	for (size_t i=0; i<v.size(); i++)
-		serialize_link(v[i], src, s, id);
+template <class T>
+void serialize_links(vector<T*>& v, vector<T*>& src, Serialize& s, const string& id)
+{
+    serializer_array(v, s, id);
+    for (size_t i = 0; i < v.size(); i++)
+        serialize_link(v[i], src, s, id);
 }
 
-void Mesh::serializer(Serialize& s) {
+void Mesh::serializer(Serialize& s)
+{
     CollisionProxy* cp = proxy ? proxy->clone(*this) : 0;
 
-	if (s.load())
-		delete_mesh(*this);
-	set_indices(*this);
-	serialize_vector(verts, s, "verts");
-	serialize_vector(nodes, s, "nodes");
-	serialize_vector(edges, s, "edges");
-	serialize_vector(faces, s, "faces");
-	// connectivity 
-	for (size_t i=0; i<verts.size(); i++) {
-		serialize_link(verts[i]->node, nodes, s, "vert.node");
-		serialize_links(verts[i]->adjf, faces, s, "vert.adjf");
-	}
-	for (size_t i=0; i<nodes.size(); i++) {
-		serialize_links(nodes[i]->verts, verts, s, "node.verts");	
-		serialize_links(nodes[i]->adje, edges, s, "node.adje");
-		if (s.load())
-			nodes[i]->mesh = this;
-	}
-	for (size_t i=0; i<edges.size(); i++) {
-		serialize_link(edges[i]->n[0], nodes, s, "edge.n[0]");
-		serialize_link(edges[i]->n[1], nodes, s, "edge.n[1]");
-		serialize_link(edges[i]->adjf[0], faces, s, "edge.adjf[0]");
-		serialize_link(edges[i]->adjf[1], faces, s, "edge.adjf[1]");
-	}
-	for (size_t i=0; i<faces.size(); i++) {
-		for (int j=0; j<3; j++) {
-			serialize_link(faces[i]->v[j], verts, s, "face.v[i]");
-			serialize_link(faces[i]->adje[j], edges, s, "face.adje[i]");
-		}
-		int mat = parent ? find(faces[i]->material, parent->materials) : -1;
-		::serializer(mat, s, "face.material");
-		if (s.load() && parent)
-			faces[i]->material = parent->materials[mat];
-	}
+    if (s.load())
+        delete_mesh(*this);
+    set_indices(*this);
+    serialize_vector(verts, s, "verts");
+    serialize_vector(nodes, s, "nodes");
+    serialize_vector(edges, s, "edges");
+    serialize_vector(faces, s, "faces");
+    // connectivity
+    for (size_t i = 0; i < verts.size(); i++) {
+        serialize_link(verts[i]->node, nodes, s, "vert.node");
+        serialize_links(verts[i]->adjf, faces, s, "vert.adjf");
+    }
+    for (size_t i = 0; i < nodes.size(); i++) {
+        serialize_links(nodes[i]->verts, verts, s, "node.verts");
+        serialize_links(nodes[i]->adje, edges, s, "node.adje");
+        if (s.load())
+            nodes[i]->mesh = this;
+    }
+    for (size_t i = 0; i < edges.size(); i++) {
+        serialize_link(edges[i]->n[0], nodes, s, "edge.n[0]");
+        serialize_link(edges[i]->n[1], nodes, s, "edge.n[1]");
+        serialize_link(edges[i]->adjf[0], faces, s, "edge.adjf[0]");
+        serialize_link(edges[i]->adjf[1], faces, s, "edge.adjf[1]");
+    }
+    for (size_t i = 0; i < faces.size(); i++) {
+        for (int j = 0; j < 3; j++) {
+            serialize_link(faces[i]->v[j], verts, s, "face.v[i]");
+            serialize_link(faces[i]->adje[j], edges, s, "face.adje[i]");
+        }
+        int mat = parent ? find(faces[i]->material, parent->materials) : -1;
+        ::serializer(mat, s, "face.material");
+        if (s.load() && parent)
+            faces[i]->material = parent->materials[mat];
+    }
     if (s.load() && cp) {
         proxy = cp;
         proxy->update(*this);
     }
 }
-

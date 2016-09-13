@@ -28,35 +28,36 @@
 #include "displayphysics.hpp"
 #include "displayreplay.hpp"
 #include "displaytesting.hpp"
-#include "misc.hpp"
 #include "io.hpp"
+#include "misc.hpp"
 #include "runphysics.hpp"
 #include <cstdlib>
 using namespace std;
 
 // implement this anywhere in any .cpp file
-extern void debug (const vector<string> &args);
+extern void debug(const vector<string>& args);
 
-int main (int argc, char **argv) {
-	srand(34573498);
-	
+int main(int argc, char* argv[])
+{
+    srand(34573498);
+
     struct Action {
         string name;
-        void (*run) (const vector<string> &args);
+        void (*run)(const vector<string>& args);
     } actions[] = {
-        {"simulate", display_physics},
-        {"simulateoffline", run_physics},
-        {"resume", display_resume},
-        {"resumeoffline", resume_physics},
-        {"replay", display_replay},
-        {"merge", merge_meshes},
-        {"generate", generate_obj},
-        {"split", split_meshes},
-        {"test", display_testing},
-        {"tri2obj", tri2obj},
-        {"debug", debug}
+        { "simulate", display_physics },
+        { "simulateoffline", run_physics },
+        { "resume", display_resume },
+        { "resumeoffline", resume_physics },
+        { "replay", display_replay },
+        { "merge", merge_meshes },
+        { "generate", generate_obj },
+        { "split", split_meshes },
+        { "test", display_testing },
+        { "tri2obj", tri2obj },
+        { "debug", debug }
     };
-    int nactions = sizeof(actions)/sizeof(Action);
+    int nactions = sizeof(actions) / sizeof(Action);
     string name = (argc <= 1) ? "" : argv[1];
     vector<string> args;
     for (int a = 2; a < argc; a++)

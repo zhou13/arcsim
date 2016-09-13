@@ -43,13 +43,13 @@ static int frameskip;
 
 static bool running = false;
 
-static void reload () {
-	Annotation::list.clear();
-    int fullframe = ::frame*::frameskip;
+static void reload()
+{
+    Annotation::list.clear();
+    int fullframe = ::frame * ::frameskip;
     sim.frame = ::frame;
     sim.time = fullframe * sim.frame_time;
-    if (!load_state(sim, stringf("%s/%05d",inprefix.c_str(), fullframe)) ||
-        sim.cloth_meshes[0]->verts.empty()) {
+    if (!load_state(sim, stringf("%s/%05d", inprefix.c_str(), fullframe)) || sim.cloth_meshes[0]->verts.empty()) {
         if (::frame == 0)
             exit(EXIT_FAILURE);
         if (!outprefix.empty())
@@ -61,13 +61,14 @@ static void reload () {
         sim.obstacles[o].get_mesh(sim.time);
 }
 
-static void idle () {
+static void idle()
+{
     if (!running)
         return;
     fps.tick();
     if (!outprefix.empty()) {
         char filename[256];
-        snprintf(filename, 256, "%s/%05d.png", outprefix.c_str(), ::frame );
+        snprintf(filename, 256, "%s/%05d.png", outprefix.c_str(), ::frame);
         save_screenshot(filename);
     }
     ::frame += 1;
@@ -76,7 +77,8 @@ static void idle () {
     redisplay();
 }
 
-static void keyboard (unsigned char key, int x, int y) {
+static void keyboard(unsigned char key, int x, int y)
+{
     unsigned char esc = 27, space = ' ';
     if (key == esc) {
         exit(0);
@@ -85,7 +87,8 @@ static void keyboard (unsigned char key, int x, int y) {
     }
 }
 
-static void special (int key, int x, int y) {
+static void special(int key, int x, int y)
+{
     bool shift = glutGetModifiers() & GLUT_ACTIVE_SHIFT,
          alt = glutGetModifiers() & GLUT_ACTIVE_ALT;
     int delta = alt ? 100 : shift ? 10 : 1;
@@ -102,20 +105,22 @@ static void special (int key, int x, int y) {
     redisplay();
 }
 
-static void save_obstacle_transforms (const vector<Obstacle> &obs, int frame,
-                                      double time) {
+static void save_obstacle_transforms(const vector<Obstacle>& obs, int frame,
+    double time)
+{
     if (!outprefix.empty() && frame < 100000) {
         for (int o = 0; o < (int)obs.size(); o++) {
             Transformation trans = identity();
             if (obs[o].transform_spline)
                 trans = get_dtrans(*obs[o].transform_spline, time).first;
             save_transformation(trans, stringf("%s/%05dobs%02d.txt",
-                                               outprefix.c_str(), frame, o));
+                                           outprefix.c_str(), frame, o));
         }
     }
 }
 
-void generate_obj (const vector<string> &args) {
+void generate_obj(const vector<string>& args)
+{
     if (args.size() < 1 || args.size() > 2) {
         cout << "Generates output meshes from saved simulation state." << endl;
         cout << "Arguments:" << endl;
@@ -132,7 +137,7 @@ void generate_obj (const vector<string> &args) {
     snprintf(config_backup_name, 256, "%s/%s", inprefix.c_str(), "conf.json");
     load_json(config_backup_name, sim);
     prepare(sim);
-    
+
     for (;;) {
         reload();
         char filename[256];
@@ -143,7 +148,8 @@ void generate_obj (const vector<string> &args) {
     }
 }
 
-void display_replay (const vector<string> &args) {
+void display_replay(const vector<string>& args)
+{
     if (args.size() < 1 || args.size() > 2) {
         cout << "Replays the results of a simulation." << endl;
         cout << "Arguments:" << endl;
@@ -153,7 +159,7 @@ void display_replay (const vector<string> &args) {
         exit(EXIT_FAILURE);
     }
     ::inprefix = args[0];
-    ::outprefix = args.size()>1 ? args[1] : "";
+    ::outprefix = args.size() > 1 ? args[1] : "";
     ::frameskip = 1;
     if (!::outprefix.empty())
         ensure_existing_directory(::outprefix);
@@ -172,6 +178,9 @@ void display_replay (const vector<string> &args) {
 
 #else
 
-void display_replay (const vector<string> &args) {opengl_fail();}
+void display_replay(const vector<string>& args)
+{
+    opengl_fail();
+}
 
 #endif // NO_OPENGL

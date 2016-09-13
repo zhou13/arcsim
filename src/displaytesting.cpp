@@ -39,23 +39,28 @@ using namespace std;
 
 #ifndef NO_OPENGL
 
-template <int n> Vec<n> random () {
+template <int n>
+Vec<n> random()
+{
     Vec<n> v;
     for (int i = 0; i < n; i++)
-        v[i] = (double)rand()/RAND_MAX * 2 - 1;
+        v[i] = (double)rand() / RAND_MAX * 2 - 1;
     return v;
 }
 
-static void recover_plasticity (Mesh &mesh) {
+static void recover_plasticity(Mesh& mesh)
+{
     for (int f = 0; f < (int)mesh.faces.size(); f++)
         mesh.faces[f]->Sp_bend = curvature<PS>(mesh.faces[f]);
 }
 
-static void remeshing_step (Cloth &cloth) {
-    dynamic_remesh(cloth.mesh, map<Node*,Plane>());
+static void remeshing_step(Cloth& cloth)
+{
+    dynamic_remesh(cloth.mesh, map<Node*, Plane>());
 }
 
-static void keyboard (unsigned char key, int x, int y) {
+static void keyboard(unsigned char key, int x, int y)
+{
     unsigned char esc = 27, enter = 13;
     if (key == esc)
         exit(0);
@@ -68,7 +73,8 @@ static void keyboard (unsigned char key, int x, int y) {
     redisplay();
 }
 
-void display_testing (const vector<string> &args) {
+void display_testing(const vector<string>& args)
+{
     if (args.size() == 0) {
         cout << "Placeholder command for interactively testing stuff." << endl;
         cout << "Edit src/displaytesting.cpp and make it do whatever you like!"
@@ -88,6 +94,9 @@ void display_testing (const vector<string> &args) {
 
 #else
 
-void display_testing (const vector<string> &args) {opengl_fail();}
+void display_testing(const vector<string>& args)
+{
+    opengl_fail();
+}
 
 #endif // NO_OPENGL

@@ -30,12 +30,18 @@
 #include "mesh.hpp"
 
 struct SplitNode {
-	Node* node;
-	Vec3 normal[2];
-	double sep;
-	Face* faces[2];
+    Node* node;
+    Vec3 normal[2];
+    double sep;
+    Face* faces[2];
 
-	SplitNode(Node* node) : node(node),sep(0) { faces[0] = faces[1] = NULL; normal[0] = normal[1]= Vec3(0); }
+    SplitNode(Node* node)
+        : node(node)
+        , sep(0)
+    {
+        faces[0] = faces[1] = NULL;
+        normal[0] = normal[1] = Vec3(0);
+    }
     bool operator<(const SplitNode& o) const { return sep < o.sep; }
 };
 

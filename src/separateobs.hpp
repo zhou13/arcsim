@@ -29,7 +29,7 @@
 
 #include "mesh.hpp"
 
-void separate_obstacles (std::vector<Mesh*> &obs_meshes,
-                         const std::vector<Mesh*> &meshes);
+void separate_obstacles(std::vector<Mesh*>& obs_meshes,
+    const std::vector<Mesh*>& meshes);
 
 #endif

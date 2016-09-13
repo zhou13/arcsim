@@ -35,43 +35,47 @@ typedef DeformBVHTree BVHTree;
 
 struct AccelStruct {
     BVHTree tree;
-    BVHNode *root;
+    BVHNode* root;
     std::map<const Face*, BVHNode*> leaves;
-    AccelStruct (const Mesh &mesh, bool ccd);
+    AccelStruct(const Mesh& mesh, bool ccd);
 };
 
-void update_accel_struct (AccelStruct &acc);
+void update_accel_struct(AccelStruct& acc);
 
-void mark_all_inactive (AccelStruct &acc);
-void mark_active (AccelStruct &acc, const Face *face);
+void mark_all_inactive(AccelStruct& acc);
+void mark_active(AccelStruct& acc, const Face* face);
 
 // callback must be safe to parallelize via OpenMP
-typedef void (*BVHCallback) (const Face *face0, const Face *face1);
+typedef void (*BVHCallback)(const Face* face0, const Face* face1);
 
-void for_overlapping_faces (BVHNode *node, float thickness,
-                            BVHCallback callback);
-void for_overlapping_faces (BVHNode *node0, BVHNode *node1, float thickness,
-                            BVHCallback callback);
-void for_overlapping_faces (const std::vector<AccelStruct*> &accs,
-                            const std::vector<AccelStruct*> &obs_accs,
-                            double thickness, BVHCallback callback,
-                            bool parallel=true, bool only_obs=false);
-void for_faces_overlapping_obstacles (const std::vector<AccelStruct*> &accs,
-                                      const std::vector<AccelStruct*> &obs_accs,
-                                      double thickness, BVHCallback callback,
-                                      bool parallel=true);
+void for_overlapping_faces(BVHNode* node, float thickness,
+    BVHCallback callback);
+void for_overlapping_faces(BVHNode* node0, BVHNode* node1, float thickness,
+    BVHCallback callback);
+void for_overlapping_faces(const std::vector<AccelStruct*>& accs,
+    const std::vector<AccelStruct*>& obs_accs,
+    double thickness, BVHCallback callback,
+    bool parallel = true, bool only_obs = false);
+void for_faces_overlapping_obstacles(const std::vector<AccelStruct*>& accs,
+    const std::vector<AccelStruct*>& obs_accs,
+    double thickness, BVHCallback callback,
+    bool parallel = true);
 
-std::vector<AccelStruct*> create_accel_structs
-    (const std::vector<Mesh*> &meshes, bool ccd);
-void destroy_accel_structs (std::vector<AccelStruct*> &accs);
+std::vector<AccelStruct*> create_accel_structs(const std::vector<Mesh*>& meshes, bool ccd);
+void destroy_accel_structs(std::vector<AccelStruct*>& accs);
 
-extern const std::vector<Mesh*> *meshes; // to check if element is cloth or obs
-extern const std::vector<Mesh*> *obs_meshes;
+extern const std::vector<Mesh*>* meshes; // to check if element is cloth or obs
+extern const std::vector<Mesh*>* obs_meshes;
 
-template <typename T> inline bool is_free (const T *p);
-template<> inline bool is_free<Node> (const Node* p) { return p->verts[0]->adjf[0]->material; }
-template<> inline bool is_free<Vert> (const Vert* p) { return p->adjf[0]->material; }
-template<> inline bool is_free<Edge> (const Edge* p) { return p->n[0]->verts[0]->adjf[0]->material; }
-template<> inline bool is_free<Face> (const Face* p) { return p->material; }
+template <typename T>
+inline bool is_free(const T* p);
+template <>
+inline bool is_free<Node>(const Node* p) { return p->verts[0]->adjf[0]->material; }
+template <>
+inline bool is_free<Vert>(const Vert* p) { return p->adjf[0]->material; }
+template <>
+inline bool is_free<Edge>(const Edge* p) { return p->n[0]->verts[0]->adjf[0]->material; }
+template <>
+inline bool is_free<Face>(const Face* p) { return p->material; }
 
 #endif

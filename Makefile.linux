@@ -8,7 +8,7 @@ CXXFLAGS := -Idependencies/include -I/opt/local/include
 ifdef NO_OPENGL
 	CXXFLAGS := $(CXXFLAGS) -DNO_OPENGL
 endif
-CXXFLAGS_DEBUG := -Wall -g -Wno-sign-compare
+CXXFLAGS_DEBUG := -Wall -g
 CXXFLAGS_RELEASE := -Wall -O3 -Wreturn-type -fopenmp
 LDFLAGS := -Ldependencies/lib -L/opt/local/lib -lpng -lz -ltaucs -llapack -llapacke -lblas -lboost_filesystem -lboost_system -lboost_thread -ljson -lgomp -lalglib
 ifndef NO_OPENGL

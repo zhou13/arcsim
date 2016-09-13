@@ -31,15 +31,23 @@
 #include "constraint.hpp"
 
 struct StrainLimit {
-    StrainLimit() : min(1), max(1) {}
-    StrainLimit(double min, double max) : min(min), max(max) {}
+    StrainLimit()
+        : min(1)
+        , max(1)
+    {
+    }
+    StrainLimit(double min, double max)
+        : min(min)
+        , max(max)
+    {
+    }
     double min, max;
 };
 
-std::vector<StrainLimit> get_strain_limits (const std::vector<Cloth> &cloths);
+std::vector<StrainLimit> get_strain_limits(const std::vector<Cloth>& cloths);
 
-void strain_limiting (std::vector<Mesh*> &meshes,
-                      const std::vector<StrainLimit> &strain_limits,
-                      const std::vector<Constraint*> &cons);
+void strain_limiting(std::vector<Mesh*>& meshes,
+    const std::vector<StrainLimit>& strain_limits,
+    const std::vector<Constraint*>& cons);
 
 #endif

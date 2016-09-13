@@ -32,23 +32,24 @@
 using namespace std;
 
 // v = x + y
-static void add (vector<double> &v, const vector<double> &x,
-                                    const vector<double> &y);
+static void add(vector<double>& v, const vector<double>& x,
+    const vector<double>& y);
 // v = a x + b y
-static void add (vector<double> &v, double a, const vector<double> &x,
-                                    double b, const vector<double> &y);
+static void add(vector<double>& v, double a, const vector<double>& x,
+    double b, const vector<double>& y);
 // v = a x
-static void scalar_mult (vector<double> &v, double a, const vector<double> &x);
+static void scalar_mult(vector<double>& v, double a, const vector<double>& x);
 
-static double dot (const vector<double> &x, const vector<double> &y);
-static double dot (const vector<double> &x, const SpMat<double> &A,
-                   const vector<double> &y);
-static double norm (const vector<double> &x);
+static double dot(const vector<double>& x, const vector<double>& y);
+static double dot(const vector<double>& x, const SpMat<double>& A,
+    const vector<double>& y);
+static double norm(const vector<double>& x);
 
-bool minimize_in_ball (const vector<double> &g, const SpMat<double> &H,
-                         double radius, vector<double> &p);
+bool minimize_in_ball(const vector<double>& g, const SpMat<double>& H,
+    double radius, vector<double>& p);
 
-void trust_region_method (const NLOpt &problem, OptOptions opt, bool verbose) {
+void trust_region_method(const NLOpt& problem, OptOptions opt, bool verbose)
+{
     // see Nocedal and Wright 2006, algorithm 4.1
     int n = problem.nvar;
     double radius = 1e-3;
@@ -58,7 +59,7 @@ void trust_region_method (const NLOpt &problem, OptOptions opt, bool verbose) {
     problem.precompute(&x[0]);
     double f = problem.objective(&x[0]);
     vector<double> g(n);
-    SpMat<double> H(n,n);
+    SpMat<double> H(n, n);
     assert(problem.hessian(&x[0], H));
     for (int iter = 0; iter < opt.max_iter(); iter++) {
         problem.gradient(&x[0], &g[0]);
@@ -70,11 +71,11 @@ void trust_region_method (const NLOpt &problem, OptOptions opt, bool verbose) {
         problem.precompute(&x_new[0]);
         double f_new = problem.objective(&x_new[0]);
         double delta_f = f_new - f;
-        double delta_m = dot(g, p) + dot(p, H, p)/2;
-        double ratio = delta_f/delta_m;
-        radius = (ratio < 0.25) ? radius/4
-               : (ratio > 0.75 && boundary) ? 2*radius
-               : radius;
+        double delta_m = dot(g, p) + dot(p, H, p) / 2;
+        double ratio = delta_f / delta_m;
+        radius = (ratio < 0.25) ? radius / 4
+                                : (ratio > 0.75 && boundary) ? 2 * radius
+                                                             : radius;
         if (ratio > eta) {
             x.swap(x_new);
             if (radius < opt.eps_x() || f - f_new < opt.eps_f())
@@ -88,13 +89,14 @@ void trust_region_method (const NLOpt &problem, OptOptions opt, bool verbose) {
 
 // finds t such that ||x1 + t (x2 - x1)|| = r
 // where n1 = ||x1||, n2 = ||x2||, d = x1 dot x2
-double line_circle_intersection (double n1, double n2, double d, double r);
+double line_circle_intersection(double n1, double n2, double d, double r);
 
-bool minimize_in_ball (const vector<double> &g, const SpMat<double> &H,
-                       double radius, vector<double> &p) {
+bool minimize_in_ball(const vector<double>& g, const SpMat<double>& H,
+    double radius, vector<double>& p)
+{
     //int n = g.size();
     static vector<double> p1, p2;
-    scalar_mult(p1, -dot(g, g)/dot(g, H, g), g);
+    scalar_mult(p1, -dot(g, g) / dot(g, H, g), g);
     p2 = taucs_linear_solve(H, g);
     scalar_mult(p2, -1, p2);
     double n1 = norm(p1), n2 = norm(p2);
@@ -104,25 +106,27 @@ bool minimize_in_ball (const vector<double> &g, const SpMat<double> &H,
     } else if (n1 < radius) {
         double d12 = dot(p1, p2);
         double t = line_circle_intersection(n1, n2, d12, radius);
-        add(p, 1-t, p1, t, p2);
+        add(p, 1 - t, p1, t, p2);
         return true;
     } else {
-        scalar_mult(p, radius/n1, p1);
+        scalar_mult(p, radius / n1, p1);
         return true;
     }
 }
 
-double line_circle_intersection (double n1, double n2, double d, double r) {
-    double a = sq(n1) - 2*d + sq(n2),
-           b = -2*sq(n1) + 2*d,
+double line_circle_intersection(double n1, double n2, double d, double r)
+{
+    double a = sq(n1) - 2 * d + sq(n2),
+           b = -2 * sq(n1) + 2 * d,
            c = sq(n1) - sq(r);
     double x[2];
     int nsol = solve_quadratic(a, b, c, x);
     return (nsol < 2) ? 0 : (x[0] >= 0) ? x[0] : x[1];
 }
 
-static void add (vector<double> &v, const vector<double> &x,
-                                    const vector<double> &y) {
+static void add(vector<double>& v, const vector<double>& x,
+    const vector<double>& y)
+{
     int n = x.size();
     v.resize(n);
 #pragma omp parallel for
@@ -130,50 +134,55 @@ static void add (vector<double> &v, const vector<double> &x,
         v[i] = x[i] + y[i];
 }
 
-static void add (vector<double> &v, double a, const vector<double> &x,
-                                    double b, const vector<double> &y) {
+static void add(vector<double>& v, double a, const vector<double>& x,
+    double b, const vector<double>& y)
+{
     int n = x.size();
     v.resize(n);
 #pragma omp parallel for
     for (int i = 0; i < n; i++)
-        v[i] = a*x[i] + b*y[i];
+        v[i] = a * x[i] + b * y[i];
 }
 
-static void scalar_mult (vector<double> &v, double a, const vector<double> &x) {
+static void scalar_mult(vector<double>& v, double a, const vector<double>& x)
+{
     int n = x.size();
     v.resize(n);
 #pragma omp parallel for
     for (int i = 0; i < n; i++)
-        v[i] = a*x[i];
+        v[i] = a * x[i];
 }
 
-static double dot (const vector<double> &x, const vector<double> &y) {
+static double dot(const vector<double>& x, const vector<double>& y)
+{
     int n = x.size();
     double d = 0;
-#pragma omp parallel for reduction(+:d)
+#pragma omp parallel for reduction(+ : d)
     for (int i = 0; i < n; i++)
-        d += x[i]*y[i];
+        d += x[i] * y[i];
     return d;
 }
 
-static double dot (const vector<double> &x, const SpMat<double> &A,
-                   const vector<double> &y) {
+static double dot(const vector<double>& x, const SpMat<double>& A,
+    const vector<double>& y)
+{
     int n = x.size();
     double d = 0;
-#pragma omp parallel for reduction(+:d)
+#pragma omp parallel for reduction(+ : d)
     for (int i = 0; i < n; i++) {
         double Ayi = 0;
-        const SpVec<double> &Ai = A.rows[i];
+        const SpVec<double>& Ai = A.rows[i];
         for (int jj = 0; jj < (int)Ai.indices.size(); jj++) {
             int j = Ai.indices[jj];
             double Aij = Ai.entries[jj];
-            Ayi += Aij*y[j];
+            Ayi += Aij * y[j];
         }
-        d += x[i]*Ayi;
+        d += x[i] * Ayi;
     }
     return d;
 }
 
-static double norm (const vector<double> &x) {
-    return sqrt(dot(x,x));
+static double norm(const vector<double>& x)
+{
+    return sqrt(dot(x, x));
 }

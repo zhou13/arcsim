@@ -30,8 +30,8 @@
 #include "cloth.hpp"
 #include "constraint.hpp"
 
-void collision_response (std::vector<Mesh*> &meshes,
-                         const std::vector<Constraint*> &cons,
-                         const std::vector<Mesh*> &obs_meshes);
+void collision_response(std::vector<Mesh*>& meshes,
+    const std::vector<Constraint*>& cons,
+    const std::vector<Mesh*>& obs_meshes);
 
 #endif

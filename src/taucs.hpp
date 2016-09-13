@@ -30,10 +30,10 @@
 #include "sparse.hpp"
 #include "vectors.hpp"
 
-std::vector<double> taucs_linear_solve (const SpMat<double> &A,
-                                        const std::vector<double> &b);
+std::vector<double> taucs_linear_solve(const SpMat<double>& A,
+    const std::vector<double>& b);
 
-template <int m> std::vector< Vec<m> > taucs_linear_solve
-    (const SpMat< Mat<m,m> > &A, const std::vector< Vec<m> > &b);
+template <int m>
+std::vector<Vec<m>> taucs_linear_solve(const SpMat<Mat<m, m>>& A, const std::vector<Vec<m>>& b);
 
 #endif

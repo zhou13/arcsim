@@ -27,19 +27,18 @@
 #ifndef DYNAMICREMESH_HPP
 #define DYNAMICREMESH_HPP
 
-#include <map>
 #include "cloth.hpp"
 #include "nearobs.hpp"
+#include <map>
 
 class MeshSubset;
 
-void static_remesh (Mesh& mesh);
+void static_remesh(Mesh& mesh);
 
-void dynamic_remesh (Mesh& mesh, const std::map<Node*,Plane> &planes);
-void dynamic_remesh (MeshSubset& subset, const std::map<Node*,Plane> &planes);
+void dynamic_remesh(Mesh& mesh, const std::map<Node*, Plane>& planes);
+void dynamic_remesh(MeshSubset& subset, const std::map<Node*, Plane>& planes);
 
-Mat3x3 compute_face_sizing (Remeshing& remeshing, const Face *face, 
-                            const std::map<Node*,Plane> &planes, bool debug = false);
-
+Mat3x3 compute_face_sizing(Remeshing& remeshing, const Face* face,
+    const std::map<Node*, Plane>& planes, bool debug = false);
 
 #endif

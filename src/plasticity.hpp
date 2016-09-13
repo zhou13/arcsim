@@ -29,14 +29,14 @@
 
 #include "cloth.hpp"
 
-void reset_plasticity (Cloth &cloth);
+void reset_plasticity(Cloth& cloth);
 
-void plastic_update (Cloth &cloth);
+void plastic_update(Cloth& cloth);
 
-void optimize_plastic_embedding (Cloth &cloth);
+void optimize_plastic_embedding(Cloth& cloth);
 
-void recompute_Sp_bend (Face *face);
+void recompute_Sp_bend(Face* face);
 
-Mat3x3 stretch_plasticity_from_embedding(const Face *face);
+Mat3x3 stretch_plasticity_from_embedding(const Face* face);
 
 #endif

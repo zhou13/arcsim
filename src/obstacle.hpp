@@ -47,16 +47,21 @@ public:
     Mesh& get_mesh(double time_sec);
 
     // lerp with previous mesh at time t - dt
-    void blend_with_previous (double t, double dt, double blend);
+    void blend_with_previous(double t, double dt, double blend);
 
-    const Motion *transform_spline;
+    const Motion* transform_spline;
 
     // A mesh containing the original, untransformed object
     Mesh base_mesh;
     // A mesh containing the correct mesh structure
     Mesh curr_state_mesh;
 
-    Obstacle (): start_time(0), end_time(infinity), activated(false) {}
+    Obstacle()
+        : start_time(0)
+        , end_time(infinity)
+        , activated(false)
+    {
+    }
 };
 
 // // Default arguments imply it's a static obstacle

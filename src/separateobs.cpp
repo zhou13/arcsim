@@ -44,41 +44,53 @@ static map<const Face*, Vec3> nold;
 
 typedef Vec3 Bary; // barycentric coordinates
 
-struct Ixn {// intersection
+struct Ixn { // intersection
     Face *f0, *f1;
     Bary b0, b1;
     Vec3 n;
-    Ixn () {}
-    Ixn (const Face *f0, const Bary &b0, const Face *f1, const Bary &b1,
-         const Vec3 &n): f0((Face*)f0), f1((Face*)f1), b0(b0), b1(b1), n(n) {}
+    Ixn() {}
+    Ixn(const Face* f0, const Bary& b0, const Face* f1, const Bary& b1,
+        const Vec3& n)
+        : f0((Face*)f0)
+        , f1((Face*)f1)
+        , b0(b0)
+        , b1(b1)
+        , n(n)
+    {
+    }
 };
 
-ostream &operator<< (ostream &out, const Ixn &ixn) {out << ixn.f0 << "@" << ixn.b0 << " " << ixn.f1 << "@" << ixn.b1 << " " << ixn.n; return out;}
-
-void update_active (const vector<AccelStruct*> &accs, const vector<Ixn> &ixns);
-
-vector<Ixn> find_intersections (const vector<AccelStruct*> &obs_accs,
-                                const vector<AccelStruct*> &accs);
-
-void solve_ixns (const vector<Ixn> &ixns);
-
-void build_face_normal_lookup(map<const Face*,Vec3>& nmap, const vector<Mesh*>& meshes) {
-	for (size_t i=0; i<meshes.size(); i++)
-    	for (size_t j=0; j<meshes[i]->faces.size(); j++)
-    		nmap[meshes[i]->faces[j]] = meshes[i]->faces[j]->n;
-
+ostream& operator<<(ostream& out, const Ixn& ixn)
+{
+    out << ixn.f0 << "@" << ixn.b0 << " " << ixn.f1 << "@" << ixn.b1 << " " << ixn.n;
+    return out;
 }
 
-void separate_obstacles (vector<Mesh*> &obs_meshes,
-                         const vector<Mesh*> &meshes) {
-    
+void update_active(const vector<AccelStruct*>& accs, const vector<Ixn>& ixns);
+
+vector<Ixn> find_intersections(const vector<AccelStruct*>& obs_accs,
+    const vector<AccelStruct*>& accs);
+
+void solve_ixns(const vector<Ixn>& ixns);
+
+void build_face_normal_lookup(map<const Face*, Vec3>& nmap, const vector<Mesh*>& meshes)
+{
+    for (size_t i = 0; i < meshes.size(); i++)
+        for (size_t j = 0; j < meshes[i]->faces.size(); j++)
+            nmap[meshes[i]->faces[j]] = meshes[i]->faces[j]->n;
+}
+
+void separate_obstacles(vector<Mesh*>& obs_meshes,
+    const vector<Mesh*>& meshes)
+{
+
     SO::xold.clear();
     SO::nold.clear();
     build_node_lookup(SO::xold, obs_meshes);
-	build_face_normal_lookup(SO::nold, obs_meshes);
+    build_face_normal_lookup(SO::nold, obs_meshes);
 
-    vector<AccelStruct*> obs_accs = create_accel_structs(obs_meshes, false),
-                         accs = create_accel_structs(meshes, false);
+    vector<AccelStruct *> obs_accs = create_accel_structs(obs_meshes, false),
+                          accs = create_accel_structs(meshes, false);
     vector<Ixn> ixns;
     int iter;
     for (iter = 0; iter < max_iter; iter++) {
@@ -106,12 +118,14 @@ void separate_obstacles (vector<Mesh*> &obs_meshes,
     destroy_accel_structs(obs_accs);
 }
 
-Vec3 pos (const Face *face, const Bary &b) {
-    return b[0]*face->v[0]->node->x + b[1]*face->v[1]->node->x
-         + b[2]*face->v[2]->node->x;
+Vec3 pos(const Face* face, const Bary& b)
+{
+    return b[0] * face->v[0]->node->x + b[1] * face->v[1]->node->x
+        + b[2] * face->v[2]->node->x;
 }
 
-void update_active (const vector<AccelStruct*> &accs, const vector<Ixn> &ixns) {
+void update_active(const vector<AccelStruct*>& accs, const vector<Ixn>& ixns)
+{
     // for (int a = 0; a < accs.size(); a++)
     //     mark_all_inactive(*accs[a]);
     // for (int i = 0; i < ixns.size(); i++)
@@ -125,12 +139,13 @@ void update_active (const vector<AccelStruct*> &accs, const vector<Ixn> &ixns) {
 }
 
 static int nthreads = 0;
-static vector<Ixn> *ixns = NULL;
+static vector<Ixn>* ixns = NULL;
 
-void find_face_intersection (const Face *face0, const Face *face1);
+void find_face_intersection(const Face* face0, const Face* face1);
 
-vector<Ixn> find_intersections (const vector<AccelStruct*> &accs,
-                                const vector<AccelStruct*> &obs_accs) {
+vector<Ixn> find_intersections(const vector<AccelStruct*>& accs,
+    const vector<AccelStruct*>& obs_accs)
+{
     if (!SO::ixns) {
         SO::nthreads = omp_get_max_threads();
         SO::ixns = new vector<Ixn>[SO::nthreads];
@@ -144,14 +159,15 @@ vector<Ixn> find_intersections (const vector<AccelStruct*> &accs,
     return ixns;
 }
 
-bool adjacent (const Face *face0, const Face *face1);
+bool adjacent(const Face* face0, const Face* face1);
 
-bool intersection_midpoint (const Face *face0, const Face *face1,
-                            Bary &b0, Bary &b1);
-bool farthest_points (const Face *face0, const Face *face1, const Vec3 &d,
-                      Bary &b0, Bary &b1);
+bool intersection_midpoint(const Face* face0, const Face* face1,
+    Bary& b0, Bary& b1);
+bool farthest_points(const Face* face0, const Face* face1, const Vec3& d,
+    Bary& b0, Bary& b1);
 
-void find_face_intersection (const Face *face0, const Face *face1) {
+void find_face_intersection(const Face* face0, const Face* face1)
+{
     if (!is_free(face0) && !is_free(face1))
         return;
     int t = omp_get_thread_num();
@@ -159,12 +175,13 @@ void find_face_intersection (const Face *face0, const Face *face1) {
     bool is_ixn = intersection_midpoint(face0, face1, b0, b1);
     if (!is_ixn)
         return;
-    Vec3 n = -normalize(face0->n/2. + SO::nold[face0]);
+    Vec3 n = -normalize(face0->n / 2. + SO::nold[face0]);
     farthest_points(face0, face1, n, b0, b1);
     SO::ixns[t].push_back(Ixn(face0, b0, face1, b1, n));
 }
 
-bool adjacent (const Face *face0, const Face *face1) {
+bool adjacent(const Face* face0, const Face* face1)
+{
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++)
             if (face0->v[i]->node == face1->v[j]->node)
@@ -172,12 +189,13 @@ bool adjacent (const Face *face0, const Face *face1) {
     return false;
 }
 
-bool face_plane_intersection (const Face *face, const Face *plane,
-                              Bary &b0, Bary &b1);
-int major_axis (const Vec3 &v);
+bool face_plane_intersection(const Face* face, const Face* plane,
+    Bary& b0, Bary& b1);
+int major_axis(const Vec3& v);
 
-bool intersection_midpoint (const Face *face0, const Face *face1,
-                            Bary &b0, Bary &b1) {
+bool intersection_midpoint(const Face* face0, const Face* face1,
+    Bary& b0, Bary& b1)
+{
     if (norm2(cross(face0->n, face1->n)) < 1e-12)
         return false;
     Bary b00, b01, b10, b11;
@@ -190,16 +208,17 @@ bool intersection_midpoint (const Face *face0, const Face *face1,
            a10 = pos(face1, b10)[axis], a11 = pos(face1, b11)[axis];
     double amin = max(min(a00, a01), min(a10, a11)),
            amax = min(max(a00, a01), max(a10, a11)),
-           amid = (amin + amax)/2;
+           amid = (amin + amax) / 2;
     if (amin > amax)
         return false;
-    b0 = (a01==a00) ? b00 : b00 + (amid-a00)/(a01-a00)*(b01-b00);
-    b1 = (a11==a10) ? b10 : b10 + (amid-a10)/(a11-a10)*(b11-b10);
+    b0 = (a01 == a00) ? b00 : b00 + (amid - a00) / (a01 - a00) * (b01 - b00);
+    b1 = (a11 == a10) ? b10 : b10 + (amid - a10) / (a11 - a10) * (b11 - b10);
     return true;
 }
 
-bool face_plane_intersection (const Face *face, const Face *plane,
-                              Bary &b0, Bary &b1) {
+bool face_plane_intersection(const Face* face, const Face* plane,
+    Bary& b0, Bary& b1)
+{
     const Vec3 &x0 = plane->v[0]->node->x, &n = plane->n;
     double h[3];
     int sign_sum = 0;
@@ -213,7 +232,7 @@ bool face_plane_intersection (const Face *face, const Face *plane,
     for (int v = 0; v < 3; v++)
         if (sgn(h[v]) == -sign_sum)
             v0 = v;
-    double t0 = h[v0]/(h[v0] - h[NEXT(v0)]), t1 = h[v0]/(h[v0] - h[PREV(v0)]);
+    double t0 = h[v0] / (h[v0] - h[NEXT(v0)]), t1 = h[v0] / (h[v0] - h[PREV(v0)]);
     b0[v0] = 1 - t0;
     b0[NEXT(v0)] = t0;
     b0[PREV(v0)] = 0;
@@ -223,18 +242,20 @@ bool face_plane_intersection (const Face *face, const Face *plane,
     return true;
 }
 
-int major_axis (const Vec3 &v) {
+int major_axis(const Vec3& v)
+{
     return (abs(v[0]) > abs(v[1]) && abs(v[0]) > abs(v[2])) ? 0
-         : (abs(v[1]) > abs(v[2])) ? 1 : 2;
+                                                            : (abs(v[1]) > abs(v[2])) ? 1 : 2;
 }
 
-double vf_clear_distance (const Face *face0, const Face *face1, const Vec3 &d,
-                          double last_dist, Bary &b0, Bary &b1);
-double ee_clear_distance (const Face *face0, const Face *face1, const Vec3 &d,
-                          double last_dist, Bary &b0, Bary &b1);
+double vf_clear_distance(const Face* face0, const Face* face1, const Vec3& d,
+    double last_dist, Bary& b0, Bary& b1);
+double ee_clear_distance(const Face* face0, const Face* face1, const Vec3& d,
+    double last_dist, Bary& b0, Bary& b1);
 
-bool farthest_points (const Face *face0, const Face *face1, const Vec3 &d,
-                      Bary &b0, Bary &b1) {
+bool farthest_points(const Face* face0, const Face* face1, const Vec3& d,
+    Bary& b0, Bary& b1)
+{
     double last_dist = 0;
     last_dist = vf_clear_distance(face0, face1, d, last_dist, b0, b1);
     last_dist = vf_clear_distance(face1, face0, -d, last_dist, b1, b0);
@@ -242,118 +263,128 @@ bool farthest_points (const Face *face0, const Face *face1, const Vec3 &d,
     return last_dist > 0;
 }
 
-double vf_clear_distance (const Face *face0, const Face *face1, const Vec3 &d,
-                          double last_dist, Bary &b0, Bary &b1) {
+double vf_clear_distance(const Face* face0, const Face* face1, const Vec3& d,
+    double last_dist, Bary& b0, Bary& b1)
+{
     for (int v = 0; v < 3; v++) {
         const Vec3 &xv = face0->v[v]->node->x, &x0 = face1->v[0]->node->x,
                    &x1 = face1->v[1]->node->x, &x2 = face1->v[2]->node->x;
-        const Vec3 &n = face1->n;
-        double h = dot(xv-x0, n), dh = dot(d, n);
-        if (h*dh >= 0)
+        const Vec3& n = face1->n;
+        double h = dot(xv - x0, n), dh = dot(d, n);
+        if (h * dh >= 0)
             continue;
-        double a0 = stp(x2-x1, xv-x1, d),
-               a1 = stp(x0-x2, xv-x2, d),
-               a2 = stp(x1-x0, xv-x0, d);
+        double a0 = stp(x2 - x1, xv - x1, d),
+               a1 = stp(x0 - x2, xv - x2, d),
+               a2 = stp(x1 - x0, xv - x0, d);
         if (a0 <= 0 || a1 <= 0 || a2 <= 0)
             continue;
-        double dist = -h/dh;
+        double dist = -h / dh;
         if (dist > last_dist) {
             last_dist = dist;
             b0 = Bary(0);
             b0[v] = 1;
-            b1[0] = a0/(a0+a1+a2);
-            b1[1] = a1/(a0+a1+a2);
-            b1[2] = a2/(a0+a1+a2);
+            b1[0] = a0 / (a0 + a1 + a2);
+            b1[1] = a1 / (a0 + a1 + a2);
+            b1[2] = a2 / (a0 + a1 + a2);
         }
     }
     return last_dist;
 }
 
-double ee_clear_distance (const Face *face0, const Face *face1, const Vec3 &d,
-                          double last_dist, Bary &b0, Bary &b1) {
+double ee_clear_distance(const Face* face0, const Face* face1, const Vec3& d,
+    double last_dist, Bary& b0, Bary& b1)
+{
     for (int e0 = 0; e0 < 3; e0++) {
         for (int e1 = 0; e1 < 3; e1++) {
             const Vec3 &x00 = face0->v[e0]->node->x,
                        &x01 = face0->v[NEXT(e0)]->node->x,
                        &x10 = face1->v[e1]->node->x,
                        &x11 = face1->v[NEXT(e1)]->node->x;
-            Vec3 n = cross(normalize(x01-x00), normalize(x11-x10));
-            double h = dot(x00-x10, n), dh = dot(d, n);
-            if (h*dh >= 0)
+            Vec3 n = cross(normalize(x01 - x00), normalize(x11 - x10));
+            double h = dot(x00 - x10, n), dh = dot(d, n);
+            if (h * dh >= 0)
                 continue;
-            double a00 = stp(x01-x10, x11-x10, d),
-                   a01 = stp(x11-x10, x00-x10, d),
-                   a10 = stp(x01-x00, x11-x00, d),
-                   a11 = stp(x10-x00, x01-x00, d);
-            if (a00*a01 <= 0 || a10*a11 <= 0)
+            double a00 = stp(x01 - x10, x11 - x10, d),
+                   a01 = stp(x11 - x10, x00 - x10, d),
+                   a10 = stp(x01 - x00, x11 - x00, d),
+                   a11 = stp(x10 - x00, x01 - x00, d);
+            if (a00 * a01 <= 0 || a10 * a11 <= 0)
                 continue;
-            double dist = -h/dh;
+            double dist = -h / dh;
             if (dist > last_dist) {
                 last_dist = dist;
                 b0 = Bary(0);
-                b0[e0] = a00/(a00+a01);
-                b0[NEXT(e0)] = a01/(a00+a01);
+                b0[e0] = a00 / (a00 + a01);
+                b0[NEXT(e0)] = a01 / (a00 + a01);
                 b1 = Bary(0);
-                b1[e1] = a10/(a10+a11);
-                b1[NEXT(e1)] = a11/(a10+a11);
+                b1[e1] = a10 / (a10 + a11);
+                b1[NEXT(e1)] = a11 / (a10 + a11);
             }
         }
     }
     return last_dist;
 }
 
-struct SeparationOpt: public NLConOpt {
-    const vector<Ixn> &ixns;
+struct SeparationOpt : public NLConOpt {
+    const vector<Ixn>& ixns;
     vector<Node*> nodes;
     double inv_m;
-    SeparationOpt (const vector<Ixn> &ixns): ixns(ixns), inv_m(0) {
+    SeparationOpt(const vector<Ixn>& ixns)
+        : ixns(ixns)
+        , inv_m(0)
+    {
         for (int i = 0; i < (int)ixns.size(); i++) {
             assert(!is_free(ixns[i].f0));
             assert(is_free(ixns[i].f1));
             for (int v = 0; v < 3; v++)
                 include(ixns[i].f0->v[v]->node, nodes);
         }
-        nvar = nodes.size()*3;
+        nvar = nodes.size() * 3;
         ncon = ixns.size();
-        inv_m = 1;//nodes.size();
+        inv_m = 1; //nodes.size();
     }
-    void initialize (double *x) const;
-    double objective (const double *x) const;
-    void obj_grad (const double *x, double *grad) const;
-    double constraint (const double *x, int j, int &sign) const;
-    void con_grad (const double *x, int j, double factor, double *grad) const;
-    void finalize (const double *x) const;
+    void initialize(double* x) const;
+    double objective(const double* x) const;
+    void obj_grad(const double* x, double* grad) const;
+    double constraint(const double* x, int j, int& sign) const;
+    void con_grad(const double* x, int j, double factor, double* grad) const;
+    void finalize(const double* x) const;
 };
 
-void solve_ixns (const vector<Ixn> &ixns) {
+void solve_ixns(const vector<Ixn>& ixns)
+{
     augmented_lagrangian_method(SeparationOpt(ixns));
 }
 
-void SeparationOpt::initialize (double *x) const {
+void SeparationOpt::initialize(double* x) const
+{
     for (int n = 0; n < (int)nodes.size(); n++)
         set_subvec(x, n, nodes[n]->x);
 }
 
-double SeparationOpt::objective (const double *x) const {
+double SeparationOpt::objective(const double* x) const
+{
     double f = 0;
     for (int n = 0; n < (int)nodes.size(); n++) {
-        const Node *node = nodes[n];
+        const Node* node = nodes[n];
         Vec3 dx = get_subvec(x, n) - SO::xold[node];
-        f += inv_m*dot(dx,dx)/2;
+        f += inv_m * dot(dx, dx) / 2;
     }
     return f;
 }
 
-void SeparationOpt::obj_grad (const double *x, double *grad) const {
+void SeparationOpt::obj_grad(const double* x, double* grad) const
+{
     for (int n = 0; n < (int)nodes.size(); n++) {
-        const Node *node = nodes[n];
+        const Node* node = nodes[n];
         Vec3 dx = get_subvec(x, n) - SO::xold[node];
-        set_subvec(grad, n, inv_m*dx);
+        set_subvec(grad, n, inv_m * dx);
     }
 }
 
-double SeparationOpt::constraint (const double *x, int j, int &sign) const {
-    const Ixn &ixn = ixns[j];
+double SeparationOpt::constraint(const double* x, int j, int& sign) const
+{
+    const Ixn& ixn = ixns[j];
     sign = 1;
     double c = -1e-3;
     for (int v = 0; v < 3; v++) {
@@ -361,33 +392,35 @@ double SeparationOpt::constraint (const double *x, int j, int &sign) const {
             i1 = find(ixn.f1->v[v]->node, nodes);
         Vec3 x0 = (i0 != -1) ? get_subvec(x, i0) : ixn.f0->v[v]->node->x,
              x1 = (i1 != -1) ? get_subvec(x, i1) : ixn.f1->v[v]->node->x;
-        c += ixn.b0[v]*dot(ixn.n, x0);
-        c -= ixn.b1[v]*dot(ixn.n, x1);
+        c += ixn.b0[v] * dot(ixn.n, x0);
+        c -= ixn.b1[v] * dot(ixn.n, x1);
     }
     return c;
 }
 
-void SeparationOpt::con_grad (const double *x, int j, double factor,
-                                double *grad) const {
-    const Ixn &ixn = ixns[j];
+void SeparationOpt::con_grad(const double* x, int j, double factor,
+    double* grad) const
+{
+    const Ixn& ixn = ixns[j];
     for (int v = 0; v < 3; v++) {
         int i0 = find(ixn.f0->v[v]->node, nodes),
             i1 = find(ixn.f1->v[v]->node, nodes);
         if (i0 != -1)
-            add_subvec(grad, i0, factor*ixn.b0[v]*ixn.n);
+            add_subvec(grad, i0, factor * ixn.b0[v] * ixn.n);
         if (i1 != -1)
-            add_subvec(grad, i1, -factor*ixn.b1[v]*ixn.n);
+            add_subvec(grad, i1, -factor * ixn.b1[v] * ixn.n);
     }
 }
 
-void SeparationOpt::finalize (const double *x) const {
+void SeparationOpt::finalize(const double* x) const
+{
     for (int n = 0; n < (int)nodes.size(); n++)
         nodes[n]->x = get_subvec(x, n);
 }
-
 };
 
-void separate_obstacles (vector<Mesh*> &obs_meshes,
-                         const vector<Mesh*> &meshes) {
+void separate_obstacles(vector<Mesh*>& obs_meshes,
+    const vector<Mesh*>& meshes)
+{
     SO::separate_obstacles(obs_meshes, meshes);
 }

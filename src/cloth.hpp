@@ -53,10 +53,10 @@ struct Remeshing {
 
 struct Cloth {
     Mesh mesh;
-    std::vector<Material*> materials;    
+    std::vector<Material*> materials;
     Remeshing remeshing;
 };
 
-void compute_material (Material& mat, double Y);
+void compute_material(Material& mat, double Y);
 
 #endif

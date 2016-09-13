@@ -35,53 +35,74 @@ extern Timer fps;
 extern int frame;
 
 struct GlutCallbacks {
-    void (*idle) ();
-    void (*keyboard) (unsigned char, int, int);
-    void (*special) (int, int, int);
-    GlutCallbacks (): idle(NULL), keyboard(NULL), special(NULL) {}
+    void (*idle)();
+    void (*keyboard)(unsigned char, int, int);
+    void (*special)(int, int, int);
+    GlutCallbacks()
+        : idle(NULL)
+        , keyboard(NULL)
+        , special(NULL)
+    {
+    }
 };
 
 struct Annotation {
-	Vec3 color;
-	Vec3 pos, dir;
-	Face* face;
-	Edge* edge;
-	Node* node;
+    Vec3 color;
+    Vec3 pos, dir;
+    Face* face;
+    Edge* edge;
+    Node* node;
 
-	static void add(Face* f, Vec3 c = Vec3(1,0,0)) { list.push_back(Annotation(f,0,0,c,Vec3(0))); }
-	static void add(Edge* e, Vec3 c = Vec3(1,0,0)) { list.push_back(Annotation(0,e,0,c,Vec3(0))); }
-	static void add(Node* n, Vec3 c = Vec3(1,0,0)) { list.push_back(Annotation(0,0,n,c,Vec3(0))); }
-	static void add(Vec3 pos, Vec3 c = Vec3(1,0,0)) { list.push_back(Annotation(0,0,0,c,pos)); }
-	static void add(Vec3 pos, Vec3 dir, Vec3 c = Vec3(1,0,0)) { list.push_back(Annotation(0,0,0,c,pos,dir)); }
-	static std::vector<Annotation> list;
+    static void add(Face* f, Vec3 c = Vec3(1, 0, 0)) { list.push_back(Annotation(f, 0, 0, c, Vec3(0))); }
+    static void add(Edge* e, Vec3 c = Vec3(1, 0, 0)) { list.push_back(Annotation(0, e, 0, c, Vec3(0))); }
+    static void add(Node* n, Vec3 c = Vec3(1, 0, 0)) { list.push_back(Annotation(0, 0, n, c, Vec3(0))); }
+    static void add(Vec3 pos, Vec3 c = Vec3(1, 0, 0)) { list.push_back(Annotation(0, 0, 0, c, pos)); }
+    static void add(Vec3 pos, Vec3 dir, Vec3 c = Vec3(1, 0, 0)) { list.push_back(Annotation(0, 0, 0, c, pos, dir)); }
+    static std::vector<Annotation> list;
+
 private:
-	Annotation(Face* f, Edge* e, Node* n, Vec3 c, Vec3 p, Vec3 d=Vec3(0)) : 
-		color(c),pos(p),dir(d),face(f),edge(e),node(n) {}
+    Annotation(Face* f, Edge* e, Node* n, Vec3 c, Vec3 p, Vec3 d = Vec3(0))
+        : color(c)
+        , pos(p)
+        , dir(d)
+        , face(f)
+        , edge(e)
+        , node(n)
+    {
+    }
 };
 
 struct Pane {
-	double lat, lon;
+    double lat, lon;
     Vec2 offset;
     Vec3 center;
     double scale;
     int window, parent;
     bool enabled;
-    Vec3 pos(Vert *v);
+    Vec3 pos(Vert* v);
     bool initialized;
 
     static Pane* current();
     static Pane panes[3];
     static Pane& material() { return panes[0]; }
-	static Pane& world() { return panes[2]; }
-	static Pane& plastic() { return panes[1]; }
+    static Pane& world() { return panes[2]; }
+    static Pane& plastic() { return panes[1]; }
 
-    Pane (bool enable): lat(0), lon(0), offset(0), scale(0.5), enabled(enable), initialized(false) {}
+    Pane(bool enable)
+        : lat(0)
+        , lon(0)
+        , offset(0)
+        , scale(0.5)
+        , enabled(enable)
+        , initialized(false)
+    {
+    }
 };
 
-void init_glut (const GlutCallbacks&);
-void run_glut ();
+void init_glut(const GlutCallbacks&);
+void run_glut();
 
-void redisplay ();
-void wait_key ();
+void redisplay();
+void wait_key();
 
 #endif

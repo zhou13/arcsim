@@ -25,27 +25,30 @@
 */
 
 #include "proxy.hpp"
-#include "simulation.hpp"
-#include "magic.hpp"
+#include "collisionutil.hpp"
 #include "constraint.hpp"
 #include "geometry.hpp"
-#include "collisionutil.hpp"
+#include "magic.hpp"
+#include "simulation.hpp"
 
 using namespace std;
 
-FloorProxy::FloorProxy(Mesh& mesh){
+FloorProxy::FloorProxy(Mesh& mesh)
+{
     update(mesh);
 }
 
-CollisionProxy* FloorProxy::clone(Mesh& mesh) {
+CollisionProxy* FloorProxy::clone(Mesh& mesh)
+{
     return new FloorProxy(mesh);
 }
 
-Constraint* FloorProxy::constraint(const Node* node) {
+Constraint* FloorProxy::constraint(const Node* node)
+{
     if (!is_free(node) || node->x[1] - center.x[1] > ::magic.repulsion_thickness)
         return 0;
 
-    IneqCon *con = new IneqCon;
+    IneqCon* con = new IneqCon;
     con->nodes[0] = (Node*)node;
     con->nodes[1] = &center;
     con->nodes[2] = 0;
@@ -56,17 +59,18 @@ Constraint* FloorProxy::constraint(const Node* node) {
     con->w[1] = -1;
     con->w[2] = 0;
     con->w[3] = 0;
-    
+
     con->stiff = ::magic.collision_stiffness * node->a;
-    con->n = Vec3(0,1,0);
-    
+    con->n = Vec3(0, 1, 0);
+
     con->mu = sim.obs_friction;
     return con;
 }
 
-void FloorProxy::update(Mesh& mesh) {
+void FloorProxy::update(Mesh& mesh)
+{
     double y = infinity;
-    for (size_t n=0; n<mesh.nodes.size(); n++)
+    for (size_t n = 0; n < mesh.nodes.size(); n++)
         if (mesh.nodes[n]->x[1] < y)
             y = mesh.nodes[n]->x[1];
     center.x = Vec3(0, y, 0);

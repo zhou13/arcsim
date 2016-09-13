@@ -28,16 +28,16 @@
 #ifndef __TIMER_H
 #define __TIMER_H
 
-#include <time.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <cstdlib>
 #include <iostream>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <time.h>
 
 struct Timer {
     boost::posix_time::ptime then;
     double last, total;
-    Timer ();
-    void tick (), tock ();
+    Timer();
+    void tick(), tock();
 };
 
 #endif

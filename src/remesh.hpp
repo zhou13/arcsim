@@ -33,14 +33,14 @@
 // Use done() and/or inverse().done() to free.
 
 struct RemeshOp {
-    std::vector<Vert*> added_verts, removed_verts;
-    std::vector<Node*> added_nodes, removed_nodes;
-    std::vector<Edge*> added_edges, removed_edges;
-    std::vector<Face*> added_faces, removed_faces;
-    bool empty () {return added_faces.empty() && removed_faces.empty();}
-    RemeshOp inverse () const;
-    void apply (Mesh &mesh) const;
-    void done () const; // frees removed data
+    std::vector<Vert *> added_verts, removed_verts;
+    std::vector<Node *> added_nodes, removed_nodes;
+    std::vector<Edge *> added_edges, removed_edges;
+    std::vector<Face *> added_faces, removed_faces;
+    bool empty() { return added_faces.empty() && removed_faces.empty(); }
+    RemeshOp inverse() const;
+    void apply(Mesh& mesh) const;
+    void done() const; // frees removed data
     void cancel(); // aborts operations, resets RemeshOp
 
     void set_null(std::vector<Edge*>& v);
@@ -48,17 +48,17 @@ struct RemeshOp {
     void update(std::vector<Face*>& v);
     void update(std::vector<Edge*>& v);
 };
-std::ostream &operator<< (std::ostream &out, const RemeshOp &op);
+std::ostream& operator<<(std::ostream& out, const RemeshOp& op);
 
 // These do not change the mesh directly,
 // they return a RemeshOp that you can apply() to the mesh
 
-bool try_move_node (Node* node, Edge* edge, double d);
+bool try_move_node(Node* node, Edge* edge, double d);
 
-RemeshOp split_edge (Edge *edge, double d);
+RemeshOp split_edge(Edge* edge, double d);
 
-RemeshOp collapse_edge (Edge *edge, int which); // which end to delete
+RemeshOp collapse_edge(Edge* edge, int which); // which end to delete
 
-RemeshOp flip_edge (Edge *edge);
+RemeshOp flip_edge(Edge* edge);
 
 #endif

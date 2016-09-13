@@ -35,7 +35,7 @@ struct Constraint;
 // Proxy for obstacle collisions. Helpful for fast-moving
 class CollisionProxy {
 public:
-    virtual ~CollisionProxy() {};
+    virtual ~CollisionProxy(){};
     virtual CollisionProxy* clone(Mesh& mesh) = 0;
     virtual void update(Mesh& mesh) = 0;
     virtual Constraint* constraint(const Node* node) = 0;
@@ -48,6 +48,7 @@ public:
     Constraint* constraint(const Node* node);
     CollisionProxy* clone(Mesh& mesh);
     void update(Mesh& mesh);
+
 private:
     Node center;
 };
