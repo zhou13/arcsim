@@ -82,7 +82,7 @@ void display_physics(const vector<string>& args)
         exit(EXIT_FAILURE);
     }
     string json_file = args[0];
-    string outprefix = args.size() > 1 ? args[1] : "";
+    string outprefix = args.size() > 1 ? args[1] : parent_path(args[1]);
     if (!outprefix.empty())
         ensure_existing_directory(outprefix);
 

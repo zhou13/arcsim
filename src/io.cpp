@@ -485,3 +485,10 @@ void ensure_existing_directory(const std::string& path)
         abort();
     }
 }
+
+std::string parent_path(const std::string& path)
+{
+    size_t last_slash;
+    last_slash = path.find_last_of("/\\");
+    return path.substr(0, last_slash);
+}

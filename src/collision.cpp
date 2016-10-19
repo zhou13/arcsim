@@ -183,9 +183,9 @@ void update_active(const vector<AccelStruct*>& accs,
 
             if (acc == 0) {
                 cout << node->mesh << " " << is_free(node) << endl;
-                for (int i = 0; i < sim.cloths.size(); i++)
+                for (size_t i = 0; i < sim.cloths.size(); i++)
                     cout << "m" << i << " " << &(sim.cloths[i].mesh) << endl;
-                for (int i = 0; i < sim.obstacle_meshes.size(); i++)
+                for (size_t i = 0; i < sim.obstacle_meshes.size(); i++)
                     cout << "o" << i << " " << sim.obstacle_meshes[i] << endl;
                 Annotation::add((Node*)node);
                 wait_key();

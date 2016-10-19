@@ -487,7 +487,7 @@ void apply_view(const Pane& view)
     glTranslatef(view.offset[0], view.offset[1], 0);
     glScalef(view.scale, view.scale, view.scale);
     glRotatef(view.lat, 1, 0, 0);
-    glRotatef(view.lon, 0, 1, 0);
+    glRotatef(view.lon, 0, 0, 1);
     glTranslatef(view.center[0], view.center[1], view.center[2]);
 }
 
@@ -655,9 +655,11 @@ struct MouseState {
     bool down;
     int x, y;
     int down_x, down_y;
-    enum { ROTATE,
+    enum {
+        ROTATE,
         TRANSLATE,
-        SCALE } func;
+        SCALE
+    } func;
 } mouse_state;
 
 void zoom(bool in)

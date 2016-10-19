@@ -27,40 +27,40 @@
         {"time": 4.5},
         {"time": 5.5, "transform": {"translate": [0.20,0,0.786], "scale": 0}}
     ], [
-	{"time": 1.5, "transform": {"translate": [0,0,0]}},
-	{"time": 3.0, "transform": {"translate": [0,0.9,0]},
+        {"time": 1.5, "transform": {"translate": [0,0,0]}},
+        {"time": 3.0, "transform": {"translate": [0,0.9,0]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 3.5, "transform": {"translate": [0,0.9,0]},
+        {"time": 3.5, "transform": {"translate": [0,0.9,0]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 4.5, "transform": {"translate": [0,0,0]}}
+        {"time": 4.5, "transform": {"translate": [0,0,0]}}
     ], [
-	{"time": 1.5, "transform": {"translate": [0,0,0]}},
-	{"time": 3.0, "transform": {"translate": [0,-0.9,0]},
+        {"time": 1.5, "transform": {"translate": [0,0,0]}},
+        {"time": 3.0, "transform": {"translate": [0,-0.9,0]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 3.5, "transform": {"translate": [0,-0.9,0]},
+        {"time": 3.5, "transform": {"translate": [0,-0.9,0]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 4.5, "transform": {"translate": [0,0,0]}}
+        {"time": 4.5, "transform": {"translate": [0,0,0]}}
     ], [
-	{"time": 1.5, "transform": {"translate": [0,0,0]}},
-	{"time": 3.0, "transform": {"translate": [0.9,0,0]},
+        {"time": 1.5, "transform": {"translate": [0,0,0]}},
+        {"time": 3.0, "transform": {"translate": [0.9,0,0]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 3.5, "transform": {"translate": [0.9,0,0]},
+        {"time": 3.5, "transform": {"translate": [0.9,0,0]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 4.5, "transform": {"translate": [0,0,0]}}
+        {"time": 4.5, "transform": {"translate": [0,0,0]}}
     ], [
-	{"time": 1.5, "transform": {"translate": [0,0,0]}},
-	{"time": 3.0, "transform": {"translate": [-0.9,0,0]},
+        {"time": 1.5, "transform": {"translate": [0,0,0]}},
+        {"time": 3.0, "transform": {"translate": [-0.9,0,0]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 3.5, "transform": {"translate": [-0.9,0,0]},
+        {"time": 3.5, "transform": {"translate": [-0.9,0,0]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 4.5, "transform": {"translate": [0,0,0]}}
+        {"time": 4.5, "transform": {"translate": [0,0,0]}}
     ], [
-	{"time": 1.5, "transform": {"translate": [0,0,0]}},
-	{"time": 3.0, "transform": {"translate": [0,0,-0.9]},
+        {"time": 1.5, "transform": {"translate": [0,0,0]}},
+        {"time": 3.0, "transform": {"translate": [0,0,-0.9]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 3.5, "transform": {"translate": [0,0,-0.9]},
+        {"time": 3.5, "transform": {"translate": [0,0,-0.9]},
                       "velocity": {"translate": [0,0,0]}},
-	{"time": 4.5, "transform": {"translate": [0,0.0,0]}}
+        {"time": 4.5, "transform": {"translate": [0,0.0,0]}}
     ]],
     "obstacles": [{
         "mesh": "meshes/square.obj",

@@ -1,0 +1,38 @@
+{
+    "frame_time": 0.04,
+    "frame_steps": 8,
+    "end_time": 10,
+    "cloths": [{
+        "reference": "sphere",
+        "mesh": "meshes/sphere2.obj",
+        "transform": {"translate": [0, 0, 1.15]},
+        "velocity": { "linear": [0, 0, -2] },
+        "materials": [{
+            "damping": 1e-4,
+            "thickness": 3e-5,
+            "density": 1200,
+            "elastic_modulus": 0.003e9,
+            "poisson_ratio": 0.4,
+            "bending_factor": 10,
+
+            "toughness" : 9e20,
+            "bend_width": 0e-3,
+            "initiation_factor": 2.0
+        }],
+        "remeshing": {
+            "refine_angle": 0.2,
+            "refine_compression": 1e-2,
+            "refine_fracture": 0.3,
+            "size": [0.03, 0.1],
+            "aspect_min": 0.3
+        }
+    }],
+    "obstacles": [{
+        "mesh": "meshes/square8.obj",
+        "transform": {"translate": [-2, -2, 0], "scale": 0.5}
+    }],
+    "gravity": [0, 0, -9.8],
+    "volume_pressure": 10,
+    "disable": ["popfilter" ],
+    "magic": {"repulsion_thickness": 5e-3, "collision_stiffness": 1e6}
+}

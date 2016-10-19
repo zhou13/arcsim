@@ -75,7 +75,8 @@ struct Simulation {
     bool enabled[nModules];
     Timer timers[nModules];
     // handy pointers
-    std::vector<Mesh *> cloth_meshes, obstacle_meshes;
+    std::vector<Mesh*> cloth_meshes;
+    std::vector<Mesh*> obstacle_meshes;
 };
 extern Simulation sim;
 

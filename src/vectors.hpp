@@ -357,6 +357,7 @@ public:
         c[1] = y;
         c[2] = z;
         c[3] = w;
+
     }
     //aa:    static Mat rows (VecnT x, VecnT y) {return Mat<n,2,T>(x,y).t();}
     //aa:    static Mat rows (VecnT x, VecnT y, VecnT z) {return Mat<n,3,T>(x,y,z).t();}

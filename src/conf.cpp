@@ -73,7 +73,7 @@ void parse(vector<T>& v, const Json::Value& json)
     if (!json.isArray())
         complain(json, "array");
     v.resize(json.size());
-    for (int i = 0; i < json.size(); i++)
+    for (size_t i = 0; i < json.size(); i++)
         parse(v[i], json[i]);
 }
 
@@ -608,11 +608,11 @@ void parse_obstacles(vector<Obstacle>& obstacles, const Json::Value& json,
             obs.start_time = 0;
             obs.end_time = infinity;
         }
-        for (int i = 0; i < obstacles.size(); i++)
+        for (size_t i = 0; i < obstacles.size(); i++)
             obstacles[i].get_mesh(0);
     } else {
         obstacles.resize(json.size());
-        for (int j = 0; j < (int)json.size(); j++)
+        for (size_t j = 0; j < (int)json.size(); j++)
             parse_obstacle(obstacles[j], json[j], motions);
     }
 }

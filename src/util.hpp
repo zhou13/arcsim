@@ -141,7 +141,7 @@ inline int find(const T& x, const T* xs, int n = 3)
 template <typename T>
 inline int find(const T& x, const std::vector<T>& xs)
 {
-    for (int i = 0; i < xs.size(); i++)
+    for (size_t i = 0; i < xs.size(); i++)
         if (xs[i] == x)
             return i;
     return -1;

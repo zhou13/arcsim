@@ -5,7 +5,7 @@
     "save_frames": 1,
     "duration": 4,
     "cloths": [{
-		"reference": "linear",
+        "reference": "linear",
         "mesh": "meshes/square_kink.obj",
         "transform": {"scale": 0.20, "translate": [0,0,0]},
         "materials": [{

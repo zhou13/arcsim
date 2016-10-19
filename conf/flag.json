@@ -6,12 +6,12 @@
     "duration": 20,
     "cloths": [{
         "mesh": "meshes/flag.obj",
-	"transform": {"translate": [0, 0, 0], "rotate": [45, 0, 1, 0]},
+        "transform": {"translate": [0, 0, 0], "rotate": [45, 0, 1, 0]},
         "materials": [{
-	    "data": "materials/camel-ponte-roma.json",
+            "data": "materials/camel-ponte-roma.json",
             "thicken": 2,
             "strain_limits": [0.95, 1.05]
-	}],
+        }],
         "remeshing": {
             "refine_angle": 0.3,
             "refine_compression": 0.01,

@@ -69,6 +69,7 @@ static void idle()
     if (!outprefix.empty()) {
         char filename[256];
         snprintf(filename, 256, "%s/%05d.png", outprefix.c_str(), ::frame);
+        printf("save image to %s\n", filename);
         save_screenshot(filename);
     }
     ::frame += 1;

@@ -55,6 +55,9 @@ void save_screenshot(const std::string& filename);
 // check that output directory exists; if not, create it
 void ensure_existing_directory(const std::string& path);
 
+// find the parent directory of a path
+std::string parent_path(const std::string& path);
+
 // IMPLEMENTATION
 
 std::string obtain_subframe_id();

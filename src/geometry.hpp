@@ -54,9 +54,11 @@ Vec3 get_barycentric_coords(const Vec2& point, const Face* face);
 Face* get_enclosing_face(const Mesh& mesh, const Vec2& u,
     Face* starting_face_hint = NULL);
 
-enum Space { MS,
+enum Space {
+    MS,
     PS,
-    WS }; // material space, plastic space, world space
+    WS
+}; // material space, plastic space, world space
 
 template <Space s>
 const Vec3& pos(const Node* node);

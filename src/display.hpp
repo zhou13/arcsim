@@ -89,10 +89,10 @@ struct Pane {
     static Pane& plastic() { return panes[1]; }
 
     Pane(bool enable)
-        : lat(0)
-        , lon(0)
+        : lat(-45)
+        , lon(45)
         , offset(0)
-        , scale(0.5)
+        , scale(0.2)
         , enabled(enable)
         , initialized(false)
     {

@@ -137,7 +137,7 @@ inline void debug_save_spmat(const SpMat<double>& A)
                  << "} -> " << aij;
         }
     }
-    file << "}]" << file;
+    file << "}]";
 }
 
 #endif
