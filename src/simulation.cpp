@@ -48,15 +48,15 @@ bool consistency_check = false;
 bool single_step = false;
 
 static const bool verbose = false;
-static const int proximity = Simulation::Proximity,
-                 physics = Simulation::Physics,
-                 strainlimiting = Simulation::StrainLimiting,
-                 collision = Simulation::Collision,
-                 remeshing = Simulation::Remeshing,
-                 separation = Simulation::Separation,
-                 popfilter = Simulation::PopFilter,
-                 plasticity = Simulation::Plasticity,
-                 fracture = Simulation::Fracture;
+static const int proximity = Simulation::Proximity;
+static const int physics = Simulation::Physics;
+static const int strainlimiting = Simulation::StrainLimiting;
+static const int collision = Simulation::Collision;
+static const int remeshing = Simulation::Remeshing;
+static const int separation = Simulation::Separation;
+static const int popfilter = Simulation::PopFilter;
+static const int plasticity = Simulation::Plasticity;
+static const int fracture = Simulation::Fracture;
 
 void physics_step(Simulation& sim, const vector<Constraint*>& cons);
 void plasticity_step(Simulation& sim);
@@ -135,7 +135,8 @@ void validate_handles(const Simulation& sim)
         vector<Node*> nodes = sim.handles[h]->get_nodes();
         for (int n = 0; n < (int)nodes.size(); n++) {
             if (!nodes[n]->preserve) {
-                cout << "Constrained node " << nodes[n]->index << " will not be preserved by remeshing" << endl;
+                cout << "Constrained node " << nodes[n]->index
+                     << " will not be preserved by remeshing" << endl;
                 abort();
             }
         }
@@ -174,7 +175,7 @@ void advance_step(Simulation& sim)
     vector<Constraint*> cons = get_constraints(sim, true);
     consistency("init step");
     physics_step(sim, cons);
-    //cout << "phys" << endl;wait_key();
+    //cout << "phys" << endl; wait_key();
     consistency("physics");
     plasticity_step(sim);
     consistency("plasticity");
@@ -188,7 +189,7 @@ void advance_step(Simulation& sim)
         consistency("remeshing");
         sim.frame++;
     }
-    //cout << "rem" << endl;wait_key();
+    //cout << "rem" << endl; wait_key();
 
     delete_constraints(cons);
 }
@@ -217,7 +218,6 @@ void delete_constraints(const vector<Constraint*>& cons)
 // Steps
 
 void update_velocities(vector<Mesh*>& meshes, vector<Vec3>& xold, double dt);
-
 void step_mesh(Mesh& mesh, double dt);
 
 void physics_step(Simulation& sim, const vector<Constraint*>& cons)
@@ -349,7 +349,6 @@ void remeshing_step(Simulation& sim, bool initializing)
 {
     if (!sim.enabled[remeshing])
         return;
-
     // remesh
     sim.timers[remeshing].tick();
     for (size_t c = 0; c < sim.cloths.size(); c++) {
@@ -405,8 +404,8 @@ void update_velocities(vector<Mesh*>& meshes, vector<Vec3>& xold, double dt)
 
 void update_obstacles(Simulation& sim, bool update_positions)
 {
-    double decay_time = 0.1,
-           blend = sim.step_time / decay_time;
+    double decay_time = 0.1;
+    double blend = sim.step_time / decay_time;
     blend = blend / (1 + blend);
     for (int o = 0; o < (int)sim.obstacles.size(); o++) {
         sim.obstacles[o].get_mesh(sim.time);
@@ -427,11 +426,11 @@ void add_jitter(Simulation& sim)
 {
     for (size_t c = 0; c < sim.cloth_meshes.size(); c++)
         for (size_t i = 0; i < sim.cloth_meshes[c]->nodes.size(); i++)
-            sim.cloth_meshes[c]->nodes[i]->x += sim.cloth_meshes[c]->nodes[i]->n * (1e-3 * (rand() % 1000) * 1e-4);
+            sim.cloth_meshes[c]->nodes[i]->x += sim.cloth_meshes[c]->nodes[i]->n
+                * (1e-3 * (rand() % 1000) * 1e-4);
 }
 
 // Helper functions
-
 vector<Vec3> node_positions(const vector<Mesh*>& meshes)
 {
     vector<Vec3> xs(count_elements<Node>(meshes));

@@ -63,7 +63,7 @@ Mesh& Obstacle::get_mesh(double time)
     if (!activated)
         update_x0(curr_state_mesh);
     activated = true;
-    for (int i = 0; i < curr_state_mesh.nodes.size(); i++)
+    for (size_t i = 0; i < curr_state_mesh.nodes.size(); i++)
         curr_state_mesh.nodes[i]->mesh = &curr_state_mesh;
     return curr_state_mesh;
 }

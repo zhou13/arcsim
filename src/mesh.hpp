@@ -34,11 +34,13 @@
 
 struct Serialize;
 
-// material space (not fused at seams)
+// Vert vs Node
+//     Vert is in material space, created from "vt" in obj files,  (not fused at seams)
+//     Node is in world space, created from "v" in obj files
+// The position of one node may represent to multiple verts when fracture exists
 struct Vert;
-struct Face;
-// world space (fused)
 struct Node;
+struct Face;
 struct Edge;
 struct Material;
 struct ReferenceShape;

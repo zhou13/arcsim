@@ -1,4 +1,7 @@
 /bin
+/mov
+/sim
+
 tags
 dependencies/include/
 dependencies/lib/

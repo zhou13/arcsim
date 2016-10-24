@@ -612,7 +612,7 @@ void parse_obstacles(vector<Obstacle>& obstacles, const Json::Value& json,
             obstacles[i].get_mesh(0);
     } else {
         obstacles.resize(json.size());
-        for (size_t j = 0; j < (int)json.size(); j++)
+        for (size_t j = 0; j < json.size(); j++)
             parse_obstacle(obstacles[j], json[j], motions);
     }
 }

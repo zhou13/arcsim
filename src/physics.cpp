@@ -520,22 +520,22 @@ void add_external_forces(const vector<Node*>& nodes, const vector<Face*>& faces,
         fext[n] += nodes[n]->m * gravity;
     }
 
+#if 0
     // volumn pressure hack by zyc@berkeley.edu
     // should be removed and you can safely remove it by changing if1 to if0
-    if (0) {
-        // TODO compute Jext
-        double volume = abs(signed_mesh_volume(faces));
-        double sphere_volume = M_PI * 4 / 3;
-        double volume_delta = sphere_volume - volume;
-        double pressure = volume_delta / sphere_volume * 400;
-        Vec3 net_volumef;
-        for (auto& face : faces) {
-            Vec3 force = pressure * face->a * face->n;
-            net_volumef += force;
-            for (int v = 0; v < 3; v++)
-                fext[face->v[v]->node->index] += force / 3.;
-        }
+    // TODO compute Jext
+    double volume = abs(signed_mesh_volume(faces));
+    double sphere_volume = M_PI * 4 / 3;
+    double volume_delta = sphere_volume - volume;
+    double pressure = volume_delta / sphere_volume * 400;
+    Vec3 net_volumef;
+    for (auto& face : faces) {
+        Vec3 force = pressure * face->a * face->n;
+        net_volumef += force;
+        for (int v = 0; v < 3; v++)
+            fext[face->v[v]->node->index] += force / 3.;
     }
+#endif
 
     // wind force
     for (size_t f = 0; f < faces.size(); f++) {

@@ -71,7 +71,7 @@ struct Simulation {
         Plasticity,
         Fracture,
         nModules
-    };
+    } Modules;
     bool enabled[nModules];
     Timer timers[nModules];
     // handy pointers

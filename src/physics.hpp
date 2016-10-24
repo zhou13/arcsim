@@ -59,11 +59,11 @@ void add_external_forces(const std::vector<Node*>& nodes, const std::vector<Face
     const Vec3& gravity, const Wind& wind, std::vector<Vec3>& fext,
     std::vector<Mat3x3>& Jext);
 
-void add_morph_forces(const Cloth& cloth, const Morph& morph, double t,
-    double dt,
+void add_morph_forces(const Cloth& cloth, const Morph& morph, double t, double dt,
     std::vector<Vec3>& fext, std::vector<Mat3x3>& Jext);
 
-std::vector<Vec3> implicit_update(std::vector<Node*>& nodes, const std::vector<Edge*>& edges,
+std::vector<Vec3> implicit_update(std::vector<Node*>& nodes,
+    const std::vector<Edge*>& edges,
     const std::vector<Face*>& faces,
     const std::vector<Vec3>& fext, const std::vector<Mat3x3>& Jext,
     const std::vector<Constraint*>& cons, double dt);
