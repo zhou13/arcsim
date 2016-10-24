@@ -91,8 +91,11 @@ Mat<1, n> rowmat(const Vec<n>& v)
 template <Space s>
 Mat3x3 deformation_gradient(const Face* face)
 {
-    return derivative(pos<s>(face->v[0]->node), pos<s>(face->v[1]->node),
-               pos<s>(face->v[2]->node), normal<s>(face), face)
+    return derivative(
+               pos<s>(face->v[0]->node),
+               pos<s>(face->v[1]->node),
+               pos<s>(face->v[2]->node),
+               normal<s>(face), face)
         * face->Sp_str;
 }
 
@@ -318,6 +321,8 @@ Vec<4, int> indices(const Node* n0, const Node* n1,
     return ix;
 }
 
+template double internal_energy<WS>(const vector<Face*>& faces, const vector<Edge*>& edges);
+template double internal_energy<PS>(const vector<Face*>& faces, const vector<Edge*>& edges);
 template <Space s>
 double internal_energy(const vector<Face*>& faces, const vector<Edge*>& edges)
 {
@@ -329,20 +334,21 @@ double internal_energy(const vector<Face*>& faces, const vector<Edge*>& edges)
     }
     return E;
 }
-template double internal_energy<PS>(const vector<Face*>&, const vector<Edge*>&);
-template double internal_energy<WS>(const vector<Face*>&, const vector<Edge*>&);
 
 // A = dt^2 J + dt damp J
 // b = dt f + dt^2 J v + dt damp J v
-
+template void add_internal_forces<PS>(const vector<Face*>&, const vector<Edge*>&,
+    SpMat<Mat3x3>&, vector<Vec3>&, double);
+template void add_internal_forces<WS>(const vector<Face*>&, const vector<Edge*>&,
+    SpMat<Mat3x3>&, vector<Vec3>&, double);
 template <Space s>
 void add_internal_forces(const vector<Face*>& faces, const vector<Edge*>& edges,
     SpMat<Mat3x3>& A, vector<Vec3>& b, double dt)
 {
-
     for (size_t f = 0; f < faces.size(); f++) {
         const Face* face = faces[f];
-        const Node *n0 = face->v[0]->node, *n1 = face->v[1]->node,
+        const Node *n0 = face->v[0]->node,
+                   *n1 = face->v[1]->node,
                    *n2 = face->v[2]->node;
         Vec9 vs = mat_to_vec(Mat3x3(n0->v, n1->v, n2->v));
         pair<Mat9x9, Vec9> membF = stretching_force<s>(face);
@@ -380,10 +386,6 @@ void add_internal_forces(const vector<Face*>& faces, const vector<Edge*>& edges,
         }
     }
 }
-template void add_internal_forces<PS>(const vector<Face*>&, const vector<Edge*>&,
-    SpMat<Mat3x3>&, vector<Vec3>&, double);
-template void add_internal_forces<WS>(const vector<Face*>&, const vector<Edge*>&,
-    SpMat<Mat3x3>&, vector<Vec3>&, double);
 
 double constraint_energy(const vector<Constraint*>& cons)
 {
@@ -454,7 +456,8 @@ void add_friction_forces(const vector<Constraint*> cons,
     }
 }
 
-vector<Vec3> implicit_update(vector<Node*>& nodes, const vector<Edge*>& edges, const vector<Face*>& faces,
+vector<Vec3> implicit_update(vector<Node*>& nodes,
+    const vector<Edge*>& edges, const vector<Face*>& faces,
     const vector<Vec3>& fext, const vector<Mat3x3>& Jext,
     const vector<Constraint*>& cons, double dt)
 {
@@ -474,24 +477,27 @@ vector<Vec3> implicit_update(vector<Node*>& nodes, const vector<Edge*>& edges, c
     }
     consistency((vector<Vec3>&)fext, "fext");
     consistency(b, "init");
+
     add_internal_forces<WS>(faces, edges, A, b, dt);
     consistency(b, "internal forces");
+
     add_constraint_forces(cons, A, b, dt);
     consistency(b, "constraints");
+
     add_friction_forces(cons, A, b, dt);
     consistency(b, "friction");
+
     ::debug_nodes = &nodes;
     vector<Vec3> dv = taucs_linear_solve(A, b);
     ::debug_nodes = 0;
     consistency(dv, "taucs");
+
     return dv;
 }
 
 Vec3 wind_force(const Face* face, const Wind& wind)
 {
-    Vec3 vface = (face->v[0]->node->v + face->v[1]->node->v
-                     + face->v[2]->node->v)
-        / 3.;
+    Vec3 vface = (face->v[0]->node->v + face->v[1]->node->v + face->v[2]->node->v) / 3.;
     Vec3 vrel = wind.velocity - vface;
     double vn = dot(face->n, vrel);
     Vec3 vt = vrel - vn * face->n;

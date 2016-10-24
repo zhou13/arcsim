@@ -170,26 +170,29 @@ void advance_step(Simulation& sim)
         sim.step_time *= 5;
         magic.collision_stiffness *= 0.4;
     }
+
     Annotation::list.clear();
     update_obstacles(sim, false);
     vector<Constraint*> cons = get_constraints(sim, true);
     consistency("init step");
+
     physics_step(sim, cons);
-    //cout << "phys" << endl; wait_key();
     consistency("physics");
+
     plasticity_step(sim);
     consistency("plasticity");
+
     strainlimiting_step(sim, cons);
     consistency("strainlimit");
+
     collision_step(sim);
     consistency("collision");
-    //cout << "coll" << endl;wait_key();
+
     if (sim.step % sim.frame_steps == 0) {
         remeshing_step(sim);
         consistency("remeshing");
         sim.frame++;
     }
-    //cout << "rem" << endl; wait_key();
 
     delete_constraints(cons);
 }
@@ -219,6 +222,7 @@ void delete_constraints(const vector<Constraint*>& cons)
 
 void update_velocities(vector<Mesh*>& meshes, vector<Vec3>& xold, double dt);
 void step_mesh(Mesh& mesh, double dt);
+vector<Vec3> uniform_divergence_elimination(const Mesh& mesh, const vector<Vec3>& dv);
 
 void physics_step(Simulation& sim, const vector<Constraint*>& cons)
 {
@@ -242,6 +246,8 @@ void physics_step(Simulation& sim, const vector<Constraint*>& cons)
                     sim.step_time, fext, Jext);
         vector<Vec3> dv = implicit_update(mesh.nodes, mesh.edges, mesh.faces,
             fext, Jext, cons, sim.step_time);
+        if (sim.cloths[c].const_volume)
+            dv = uniform_divergence_elimination(mesh, dv);
         for (size_t n = 0; n < mesh.nodes.size(); n++) {
             mesh.nodes[n]->v += dv[n];
             mesh.nodes[n]->acceleration = dv[n] / sim.step_time;
@@ -441,4 +447,37 @@ vector<Vec3> node_positions(const vector<Mesh*>& meshes)
             xs[idx++] = nodes[n]->x;
     }
     return xs;
+}
+
+// solve equation dV/dt = 1/6 d/dt(\sum_{f \in F} r_f . (a_f x b_f)) = 0
+// assuming that there is a uniform pressure applied on the cloth to keep
+// volume unchanged.
+vector<Vec3> uniform_divergence_elimination(const Mesh& mesh, const vector<Vec3>& v)
+{
+    double c = 0;
+    double d = 0;
+    for (auto face : mesh.faces) {
+        Node* n0 = face->v[0]->node;
+        Node* n1 = face->v[1]->node;
+        Node* n2 = face->v[2]->node;
+        Vec3 r = n0->x;
+        Vec3 a = n1->x - r;
+        Vec3 b = n2->x - r;
+        Vec3 v0 = v[n0->index];
+        Vec3 v1 = v[n1->index];
+        Vec3 v2 = v[n2->index];
+        Vec3 axb = cross(a, b);
+
+        c += dot(n0->n, axb) + dot(r, cross(n1->n - n0->n, b) + cross(a, n2->n - n0->n));
+        d += dot(v0, axb) + dot(r, cross(v1 - v0, b) + cross(a, v2 - v0));
+    }
+
+    double p = d / c;
+    auto dv = v;
+    for (auto face : mesh.faces) {
+        for (int i = 0; i < 3; ++i)
+            dv[face->v[i]->node->index] = p * face->v[i]->node->n;
+    }
+
+    return dv;
 }

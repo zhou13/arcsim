@@ -55,6 +55,7 @@ struct Cloth {
     Mesh mesh;
     std::vector<Material*> materials;
     Remeshing remeshing;
+    bool const_volume;
 };
 
 void compute_material(Material& mat, double Y);

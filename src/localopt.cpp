@@ -58,7 +58,7 @@ LocalOpt<s>::LocalOpt(vector<Node*>& nodes, const vector<Face*>& faces, const ve
     , faces(faces)
     , edges(edges)
 {
-    int nn = nodes.size();
+    size_t nn = nodes.size();
     x0.resize(nn);
     F.resize(nn);
     J = SpMat<Mat3x3>(nn, nn);
@@ -88,7 +88,7 @@ void LocalOpt<s>::initialize(double* x) const
 template <Space s>
 void LocalOpt<s>::update(const double* x) const
 {
-    for (int no = 0; no < nodes.size(); no++)
+    for (size_t no = 0; no < nodes.size(); no++)
         pos<s>(nodes[no]) = x0[no] + get_subvec(x, no);
 }
 
@@ -110,12 +110,12 @@ double LocalOpt<s>::objective(const double* x) const
 {
     update(x);
     double E = internal_energy<s>(faces, edges);
-    double e0 = E;
+    // double e0 = E;
     E += constraint_energy(cons);
-    double e1 = E;
+    // double e1 = E;
     if (s == WS) {
         for (size_t n = 0; n < nodes.size(); n++) {
-            const Node* node = nodes[n];
+            // const Node* node = nodes[n];
             //E += node->m * dot(node->acceleration, node->x);
         }
     }
@@ -126,7 +126,7 @@ double LocalOpt<s>::objective(const double* x) const
 template <Space s>
 void LocalOpt<s>::gradient(const double* x, double* g) const
 {
-    for (int no = 0; no < nodes.size(); no++) {
+    for (size_t no = 0; no < nodes.size(); no++) {
         Vec3 f = -F[no];
         if (s == WS)
             //f += nodes[no]->m*nodes[no]->acceleration; // retain acceleration
@@ -145,8 +145,8 @@ bool LocalOpt<s>::hessian(const double* x, SpMat<double>& H) const
     double tr = 0; // for regularization
     for (size_t i = 0; i < nodes.size(); i++) {
         const SpVec<Mat3x3>& Ji = J.rows[i];
-        for (int jj = 0; jj < Ji.indices.size(); jj++) {
-            int j = Ji.indices[jj];
+        for (size_t jj = 0; jj < Ji.indices.size(); jj++) {
+            size_t j = Ji.indices[jj];
             const Mat3x3& Jij = Ji.entries[jj];
             set_submat(H, i, j, Jij);
         }

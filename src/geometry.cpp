@@ -421,14 +421,14 @@ Plane plane_fit(const Mesh& mesh)
 {
     int num = 0;
     Vec3 center(0);
-    for (int i = 0; i < mesh.verts.size(); i++) {
+    for (size_t i = 0; i < mesh.verts.size(); i++) {
         num++;
         center += pos<s>(mesh.verts[i]);
     }
     center *= 1.0 / num;
 
     Mat3x3 M(0);
-    for (int i = 0; i < mesh.verts.size(); i++) {
+    for (size_t i = 0; i < mesh.verts.size(); i++) {
         Vec3 p = pos<s>(mesh.verts[i]) - center;
         M += outer(p, p);
     }

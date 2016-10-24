@@ -53,7 +53,7 @@ std::vector<double> operator/(const std::vector<double>& x, double a);
 template <typename T>
 void fill_in_velocity(Spline<T>& s, int i)
 {
-    if (i - 1 < 0 || i + 1 >= s.points.size())
+    if (i - 1 < 0 || i + 1 >= (int)s.points.size())
         s.points[i].v = s.points[i].x * 0.;
     else
         s.points[i].v = (s.points[i + 1].x - s.points[i - 1].x)

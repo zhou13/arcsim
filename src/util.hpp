@@ -276,7 +276,7 @@ template <typename T>
 std::ostream& operator<<(std::ostream& out, const std::vector<T>& v)
 {
     out << "[";
-    for (int i = 0; i < v.size(); i++)
+    for (size_t i = 0; i < v.size(); i++)
         out << (i == 0 ? "" : ", ") << v[i];
     out << "]";
     return out;

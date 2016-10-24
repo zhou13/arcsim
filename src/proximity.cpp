@@ -60,7 +60,7 @@ template <class T>
 void serialize_minvec(vector<Min<T*>>& v, Serialize& s, const string& name)
 {
     serializer_array(v, s, name);
-    for (int i = 0; i < v.size(); i++) {
+    for (size_t i = 0; i < v.size(); i++) {
         serializer(v[i].key, s, name);
         int idx = v[i].val ? v[i].val->index : -1;
         serializer(idx, s, name);

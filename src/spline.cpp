@@ -32,11 +32,11 @@ using namespace std;
 // binary search, returns keyframe immediately *after* given time
 // range of output: 0 to a.keyfs.size() inclusive
 template <typename T>
-static int find(const Spline<T>& s, double t)
+static size_t find(const Spline<T>& s, double t)
 {
-    int l = 0, u = s.points.size();
+    size_t l = 0, u = s.points.size();
     while (l != u) {
-        int m = (l + u) / 2;
+        size_t m = (l + u) / 2;
         if (t < s.points[m].t)
             u = m;
         else
@@ -48,7 +48,7 @@ static int find(const Spline<T>& s, double t)
 template <typename T>
 T Spline<T>::pos(double t) const
 {
-    int i = find(*this, t);
+    size_t i = find(*this, t);
     if (i == 0) {
         const Point& p1 = points[i];
         return p1.x;
@@ -66,7 +66,7 @@ T Spline<T>::pos(double t) const
 template <typename T>
 T Spline<T>::vel(double t) const
 {
-    int i = find(*this, t);
+    size_t i = find(*this, t);
     if (i == 0 || i == points.size()) {
         return T(0);
     } else {

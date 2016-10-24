@@ -183,7 +183,7 @@ template <typename T>
 vector<T> tail(const vector<T>& v)
 {
     vector<T> w(v.size() - 1);
-    for (int i = 0; i < w.size(); i++)
+    for (size_t i = 0; i < w.size(); i++)
         w[i] = v[i + 1];
     return w;
 }
@@ -193,7 +193,7 @@ vector<T> cons(const T& x, const vector<T>& v)
 {
     vector<T> w(v.size() + 1);
     w[0] = x;
-    for (int i = 1; i < w.size(); i++)
+    for (size_t i = 1; i < w.size(); i++)
         w[i] = v[i - 1];
     return w;
 }

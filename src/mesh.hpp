@@ -105,16 +105,21 @@ struct Node {
     Vec3 y; // plastic embedding
     Vec3 x, x0, v; // position, old (collision-free) position, velocity
     bool preserve; // don't remove this node
+
     // topological data
     int index; // position in mesh.nodes
     std::vector<Edge*> adje; // adjacent edges
+
     // derived world-space data that changes every frame
     Vec3 n; // local normal, approximate
+
     // derived material-space data that only changes with remeshing
     double a, m; // area, mass
     Mat3x3 curvature; // filtered curvature for bending fracture
+
     // pop filter data
     Vec3 acceleration;
+
     Node()
         : uuid(uuid_src++)
         , sep(0)
@@ -179,19 +184,24 @@ struct Face {
     Vert* v[3]; // verts
     Material* material;
     int flag;
+
     // topological data
     Edge* adje[3]; // adjacent edges
     int index; // position in mesh.faces
+
     // derived world-space data that changes every frame
     Vec3 n; // local normal, exact
+
     // derived material-space data that only changes with remeshing
     double a, m; // area, mass
     Mat3x3 Dm, invDm; // finite element matrix
+
     // plasticity data
     Mat3x3 Sp_bend; // plastic bending strain
     Mat3x3 Sp_str; // plastic stretching
     Mat3x3 sigma;
     double damage; // accumulated norm of S_plastic/S_yield
+
     // constructors
     Face()
         : material(0)

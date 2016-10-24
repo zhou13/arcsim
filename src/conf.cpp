@@ -170,18 +170,21 @@ void parse(bool& b, const Json::Value& json)
         complain(json, "boolean");
     b = json.asBool();
 }
+
 void parse(int& n, const Json::Value& json)
 {
     if (!json.isIntegral())
         complain(json, "integer");
     n = json.asInt();
 }
+
 void parse(double& x, const Json::Value& json)
 {
     if (!json.isNumeric())
         complain(json, "real");
     x = json.asDouble();
 }
+
 void parse(string& s, const Json::Value& json)
 {
     if (!json.isString())
@@ -282,6 +285,8 @@ void parse(Cloth& cloth, const Json::Value& json)
     apply_velocity(cloth.mesh, velocity);
     parse(cloth.materials, json["materials"]);
     parse(cloth.remeshing, json["remeshing"]);
+    parse(cloth.const_volume, json["const_volume"], false);
+
     for (size_t i = 0; i < cloth.materials.size(); i++)
         if (cloth.materials[i]->use_dde) {
             reorient_MS(cloth.mesh);

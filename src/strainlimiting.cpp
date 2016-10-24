@@ -55,7 +55,7 @@ T* get(int n, const vector<Mesh*>& meshes)
 {
     for (size_t m = 0, idx = 0; m < meshes.size(); m++) {
         const vector<T*>& vec = get<T>(*meshes[m]);
-        if (n < idx + vec.size())
+        if (n < int(idx + vec.size()))
             return vec[n - idx];
         idx += vec.size();
     }
