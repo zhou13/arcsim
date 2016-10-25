@@ -425,8 +425,7 @@ void add_impacts(const vector<Impact>& impacts, vector<ImpactZone*>& zones)
         ImpactZone* zone = find_or_create_zone(node, zones);
         for (int n = 0; n < 4; n++)
             if (is_free(impact.nodes[n]) || ::deform_obstacles)
-                merge_zones(zone, find_or_create_zone(impact.nodes[n], zones),
-                    zones);
+                merge_zones(zone, find_or_create_zone(impact.nodes[n], zones), zones);
         zone->impacts.push_back(impact);
         zone->active = true;
     }

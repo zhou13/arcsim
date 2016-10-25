@@ -9,15 +9,13 @@
         "mesh": "meshes/square_kink.obj",
         "transform": {"scale": 0.20, "translate": [0,0,0]},
         "materials": [{
-            // paper
             "damping": 1e-4,
             "thickness": 1e-4,
             "density": 800,
             "elastic_modulus": 4e9,
             "poisson_ratio": 0,
-            "bending_factor": 10, 
+            "bending_mult": 10,
             
-            // fracture
             "toughness" : 9e7,
             "bend_width": 0e-3,
             "initiation_factor": 2.0     
@@ -46,7 +44,6 @@
         {"type": "node", "label": 8, "motion": 0},
         {"type": "node", "label": 2, "motion": 1}
     ],
-    //"obstacles": [],
     "gravity": [0, -9.8, 0],
     "disable": ["plasticity"],
     "wind": {"density": 0},

@@ -13,7 +13,6 @@
             "density": 1200,
             "elastic_modulus": 0.003e9,
             "poisson_ratio": 0.4,
-            "bending_factor": 10,
 
             "toughness" : 9e20,
             "bend_width": 0e-3,

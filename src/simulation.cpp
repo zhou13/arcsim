@@ -220,9 +220,9 @@ void delete_constraints(const vector<Constraint*>& cons)
 
 // Steps
 
-void update_velocities(vector<Mesh*>& meshes, vector<Vec3>& xold, double dt);
+void update_velocities(Simulation& sim, const vector<Vec3>& xold, double dt);
 void step_mesh(Mesh& mesh, double dt);
-vector<Vec3> uniform_divergence_elimination(const Mesh& mesh, const vector<Vec3>& dv);
+vector<Vec3> divergence_elimination(const Mesh& mesh, const vector<Vec3>& v, const vector<bool>& fixed);
 
 void physics_step(Simulation& sim, const vector<Constraint*>& cons)
 {
@@ -246,8 +246,10 @@ void physics_step(Simulation& sim, const vector<Constraint*>& cons)
                     sim.step_time, fext, Jext);
         vector<Vec3> dv = implicit_update(mesh.nodes, mesh.edges, mesh.faces,
             fext, Jext, cons, sim.step_time);
-        if (sim.cloths[c].const_volume)
-            dv = uniform_divergence_elimination(mesh, dv);
+        if (sim.cloths[c].const_volume) {
+            dv = divergence_elimination(mesh, dv, vector<bool>(dv.size(), false));
+            dv = divergence_elimination(mesh, dv, vector<bool>(dv.size(), false));
+        }
         for (size_t n = 0; n < mesh.nodes.size(); n++) {
             mesh.nodes[n]->v += dv[n];
             mesh.nodes[n]->acceleration = dv[n] / sim.step_time;
@@ -292,7 +294,7 @@ void strainlimiting_step(Simulation& sim, const vector<Constraint*>& cons)
     sim.timers[strainlimiting].tick();
     vector<Vec3> xold = node_positions(sim.cloth_meshes);
     strain_limiting(sim.cloth_meshes, get_strain_limits(sim.cloths), cons);
-    update_velocities(sim.cloth_meshes, xold, sim.step_time);
+    update_velocities(sim, xold, sim.step_time);
     sim.timers[strainlimiting].tock();
 }
 
@@ -347,7 +349,7 @@ void collision_step(Simulation& sim)
     vector<Constraint*> cons = get_constraints(sim, false);
     collision_response(sim.cloth_meshes, cons, sim.obstacle_meshes);
     delete_constraints(cons);
-    update_velocities(sim.cloth_meshes, xold, sim.step_time);
+    update_velocities(sim, xold, sim.step_time);
     sim.timers[collision].tock();
 }
 
@@ -397,14 +399,35 @@ void remeshing_step(Simulation& sim, bool initializing)
     }
 }
 
-void update_velocities(vector<Mesh*>& meshes, vector<Vec3>& xold, double dt)
+void update_velocities(Simulation& sim, const vector<Vec3>& xold, double dt)
 {
     double inv_dt = 1 / dt;
     int idx = 0;
-    for (size_t m = 0; m < meshes.size(); m++) {
-        vector<Node*>& nodes = meshes[m]->nodes;
-        for (size_t n = 0; n < nodes.size(); n++)
-            nodes[n]->v += (nodes[n]->x - xold[idx++]) * inv_dt;
+    for (auto& cloth : sim.cloths) {
+        vector<Node*>& nodes = cloth.mesh.nodes;
+
+        size_t diffcnt = 0;
+        vector<Vec3> v(nodes.size());
+        vector<bool> fixed(nodes.size(), false);
+        for (size_t n = 0; n < nodes.size(); n++) {
+            if (nodes[n]->x != xold[n + idx]) {
+                v[n] = (nodes[n]->x - xold[n + idx]) * inv_dt;
+                fixed[n] = true;
+                ++diffcnt;
+            }
+        }
+
+        if (cloth.const_volume) {
+            printf("  diff count: %zu/%zu\n", diffcnt, nodes.size());
+            v = divergence_elimination(cloth.mesh, v, fixed);
+        }
+
+        for (size_t n = 0; n < nodes.size(); n++) {
+            nodes[n]->x = xold[n + idx] + v[n] * dt;
+            nodes[n]->v += v[n];
+        }
+
+        idx += nodes.size();
     }
 }
 
@@ -452,7 +475,7 @@ vector<Vec3> node_positions(const vector<Mesh*>& meshes)
 // solve equation dV/dt = 1/6 d/dt(\sum_{f \in F} r_f . (a_f x b_f)) = 0
 // assuming that there is a uniform pressure applied on the cloth to keep
 // volume unchanged.
-vector<Vec3> uniform_divergence_elimination(const Mesh& mesh, const vector<Vec3>& v)
+vector<Vec3> divergence_elimination(const Mesh& mesh, const vector<Vec3>& v, const vector<bool>& fixed)
 {
     double c = 0;
     double d = 0;
@@ -468,16 +491,22 @@ vector<Vec3> uniform_divergence_elimination(const Mesh& mesh, const vector<Vec3>
         Vec3 v2 = v[n2->index];
         Vec3 axb = cross(a, b);
 
-        c += dot(n0->n, axb) + dot(r, cross(n1->n - n0->n, b) + cross(a, n2->n - n0->n));
+        Vec3 n0n = fixed[n0->index] ? Vec3() : n0->n;
+        Vec3 n1n = fixed[n1->index] ? Vec3() : n1->n;
+        Vec3 n2n = fixed[n2->index] ? Vec3() : n2->n;
+
+        c += dot(n0n, axb) + dot(r, cross(n1n - n0n, b) + cross(a, n2n - n0n));
         d += dot(v0, axb) + dot(r, cross(v1 - v0, b) + cross(a, v2 - v0));
     }
 
-    double p = d / c;
-    auto dv = v;
-    for (auto face : mesh.faces) {
-        for (int i = 0; i < 3; ++i)
-            dv[face->v[i]->node->index] = p * face->v[i]->node->n;
+    printf("  c: %.3f\n", c);
+    printf("  d: %.3f\n", d);
+
+    double p = -d / c;
+    auto nv = v;
+    for (auto node : mesh.nodes) {
+        nv[node->index] += p * node->n;
     }
 
-    return dv;
+    return nv;
 }
