@@ -40,6 +40,7 @@ extern void debug(const vector<string>& args);
 int main(int argc, char* argv[])
 {
     srand(34573498);
+    std::cout << std::scientific << std::setprecision(5);
 
     struct Action {
         string name;

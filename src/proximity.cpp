@@ -169,7 +169,7 @@ vector<Constraint*> proximity_constraints(vector<Mesh*>& meshes,
 
     if (consistency_check) {
         cout << "> proximity2: " << endl;
-        test_state(cons, "/tmp/cs");
+        dump_state(cons, "/tmp/cs");
     }
 
     destroy_accel_structs(accs);

@@ -37,13 +37,12 @@ using namespace std;
 
 static const bool verbose = false;
 extern bool consistency_check;
-extern vector<Node*>* debug_nodes;
 
 static void consistency(vector<Vec3>& b, const string& name)
 {
     if (consistency_check) {
         cout << "> physics: " << name << " ";
-        test_state(b, "/tmp/b");
+        dump_state(b, "/tmp/b");
     }
 }
 
@@ -487,9 +486,7 @@ vector<Vec3> implicit_update(vector<Node*>& nodes,
     add_friction_forces(cons, A, b, dt);
     consistency(b, "friction");
 
-    ::debug_nodes = &nodes;
     vector<Vec3> dv = taucs_linear_solve(A, b);
-    ::debug_nodes = 0;
     consistency(dv, "taucs");
 
     return dv;
@@ -517,13 +514,30 @@ double signed_mesh_volume(const vector<Face*>& faces)
 }
 
 void add_external_forces(const vector<Node*>& nodes, const vector<Face*>& faces,
-    const Vec3& gravity, const Wind& wind, vector<Vec3>& fext, vector<Mat3x3>& Jext)
+    const Vec3& gravity, const Wind& wind, const vector<unique_ptr<Force>>& forces,
+    vector<Vec3>& fext, vector<Mat3x3>& Jext)
 {
     // gravity
     Vec3 net_gravity;
     for (size_t n = 0; n < nodes.size(); n++) {
         net_gravity += nodes[n]->m * gravity;
         fext[n] += nodes[n]->m * gravity;
+    }
+
+    // wind force
+    for (size_t f = 0; f < faces.size(); f++) {
+        const Face* face = faces[f];
+        Vec3 fw = wind_force(face, wind);
+        if (norm2(fw) > 0)
+            for (int v = 0; v < 3; v++)
+                fext[face->v[v]->node->index] += fw / 3.;
+    }
+
+    // user-specified external force
+    for (auto& f : forces) {
+        auto node = f->node;
+        auto dir = f->normal_direction ? node->n : f->direction;
+        fext[node->index] += dir * f->magnitude;
     }
 
 #if 0
@@ -540,15 +554,6 @@ void add_external_forces(const vector<Node*>& nodes, const vector<Face*>& faces,
     //         fext[face->v[v]->node->index] += force / 3.;
     // }
 #endif
-
-    // wind force
-    for (size_t f = 0; f < faces.size(); f++) {
-        const Face* face = faces[f];
-        Vec3 fw = wind_force(face, wind);
-        if (norm2(fw) > 0)
-            for (int v = 0; v < 3; v++)
-                fext[face->v[v]->node->index] += fw / 3.;
-    }
 }
 
 void add_morph_forces(const Cloth& cloth, const Morph& morph, double t,

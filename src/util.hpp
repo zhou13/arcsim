@@ -269,8 +269,7 @@ void build_node_lookup(std::map<const Node*, Vec3>& nodemap, const std::vector<M
 
 void segfault();
 void debug_save_mesh(const Mesh& mesh, const std::string& name, int n = -1);
-void debug_save_meshes(const std::vector<Mesh*>& meshes,
-    const std::string& name, int n = -1);
+void debug_save_meshes(const std::vector<Mesh*>& meshes, const std::string& name, int n = -1);
 
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const std::vector<T>& v)
@@ -291,9 +290,11 @@ std::ostream& operator<<(std::ostream& out, const std::vector<T>& v)
 // Serialization
 
 struct Serialize {
-    enum Mode { Load = 0,
+    enum Mode {
+        Load = 0,
         Save,
-        Check };
+        Check
+    };
 
     gzFile fp;
     int version;

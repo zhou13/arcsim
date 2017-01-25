@@ -24,41 +24,36 @@
   UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 */
 
-#ifndef CLOTH_HPP
-#define CLOTH_HPP
+#ifndef MEASURE_HPP
+#define MEASURE_HPP
 
-#include "dde.hpp"
 #include "mesh.hpp"
+#include <iomanip>
+#include <iostream>
+#include <vector>
 
-struct Material {
-    double density; // area density
-    StretchingSamples dde_stretching;
-    BendingData dde_bending;
-    double damping; // stiffness-proportional damping coefficient
-    double strain_min, strain_max; // strain limits
-    double yield_curv, weakening; // plasticity parameters
-    double yield_stretch, plastic_flow, plastic_limit;
-    bool use_dde; // use DDE material files
-    double thickness;
-    double alt_stretching, alt_bending, alt_poisson; // alternative material model
-    double toughness, fracture_bend_thickness; // fracture toughness
+struct Measure {
+    virtual void print_info() = 0;
 };
 
-struct Remeshing {
-    double refine_angle, refine_compression, refine_velocity;
-    double size_min, size_max, size_uniform; // size limits
-    double aspect_min; // aspect ratio control
-    double refine_fracture;
+struct NodeMeasure : public Measure {
+    Node* node;
+    Vec3 x;
+
+    void print_info() override
+    {
+        Vec3 displacement = node->x - x;
+        double disp_length = norm(displacement);
+        std::cout << "    Node " << std::setw(6) << node->index << "\n"
+            << "            dx  "<< std::setw(13) << disp_length << std::endl
+            << "            n  " << node->n << std::endl
+            << "            x  " << node->x << std::endl
+            << "            v  " << node->v << std::endl;
+    }
 };
 
-struct Cloth {
-    Mesh mesh;
-    std::vector<Material*> materials;
-    Remeshing remeshing;
-    bool const_volume_DE;
-    bool const_volume_HD;
+class HandleMeasure : public Measure {
+    void print_info() override {}
 };
-
-void compute_material(Material& mat, double Y);
 
 #endif

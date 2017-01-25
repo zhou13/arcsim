@@ -8,12 +8,13 @@ CXXFLAGS := -Idependencies/include -I/opt/local/include -std=c++14
 ifdef NO_OPENGL
 	CXXFLAGS := $(CXXFLAGS) -DNO_OPENGL
 endif
-CXXFLAGS_DEBUG := -Wall -g
+CXXFLAGS_DEBUG := -Wall -g -fsanitize=address
 CXXFLAGS_RELEASE := -Wall -O3 -Wreturn-type -fopenmp
 LDFLAGS := -Ldependencies/lib -lpng -lz -ltaucs -llapack -llapacke -lblas -lboost_filesystem -lboost_system -lboost_thread -ljson -lgomp -lalglib
 ifndef NO_OPENGL
 	LDFLAGS := $(LDFLAGS) -lglut -lGLU -lGL
 endif
+LDFLAGS_DEBUG := -fsanitize=address
 
 OBJ := \
 	auglag.o \
@@ -79,7 +80,7 @@ debug: bin/arcsimd ctags
 release: bin/arcsim ctags
 
 bin/arcsimd: $(addprefix build/debug/,$(OBJ))
-	$(CXX) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+	$(CXX) $^ -o $@ $(LDFLAGS) $(LDFLAGS_DEBUG) $(LDLIBS)
 
 bin/arcsim: $(addprefix build/release/,$(OBJ))
 	$(CXX) $^ -o $@ $(LDFLAGS) $(LDLIBS)

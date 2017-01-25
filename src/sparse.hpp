@@ -101,7 +101,7 @@ struct SpMat {
         return rows[i][j];
     }
     T& operator()(int i, int j)
-    { // inserts entry as side-effect
+    {
         return rows[i][j];
     }
 };

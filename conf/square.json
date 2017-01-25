@@ -16,6 +16,10 @@
             "aspect_min": 0.2
         }
     }],
+    "forces": [{
+        "nodes": [4],
+        "magnitude": -2.0
+    }],
     "motions": [[
         {"time": 1, "transform": {"translate": [0,0,0]}},
         {"time": 6, "transform": {"translate": [0.45,0,0]},

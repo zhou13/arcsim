@@ -56,8 +56,8 @@ void add_constraint_forces(const std::vector<Constraint*>& cons,
     SpMat<Mat3x3>& A, std::vector<Vec3>& b, double dt);
 
 void add_external_forces(const std::vector<Node*>& nodes, const std::vector<Face*>& faces,
-    const Vec3& gravity, const Wind& wind, std::vector<Vec3>& fext,
-    std::vector<Mat3x3>& Jext);
+    const Vec3& gravity, const Wind& wind, const std::vector<std::unique_ptr<Force>>& forces,
+    std::vector<Vec3>& fext, std::vector<Mat3x3>& Jext);
 
 void add_morph_forces(const Cloth& cloth, const Morph& morph, double t, double dt,
     std::vector<Vec3>& fext, std::vector<Mat3x3>& Jext);

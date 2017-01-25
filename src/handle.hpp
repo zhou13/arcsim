@@ -54,6 +54,7 @@ struct NodeHandle : public Handle {
     const Motion* motion;
     bool activated;
     Vec3 x0;
+    bool axis[3];
     NodeHandle()
         : activated(false)
     {

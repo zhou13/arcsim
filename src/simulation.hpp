@@ -30,12 +30,15 @@
 #include "cloth.hpp"
 #include "constraint.hpp"
 #include "handle.hpp"
+#include "measure.hpp"
+#include "force.hpp"
 #include "morph.hpp"
 #include "obstacle.hpp"
 #include "spline.hpp"
 #include "timer.hpp"
 #include <string>
 #include <vector>
+#include <memory>
 
 struct Wind {
     double density;
@@ -54,9 +57,13 @@ struct Simulation {
     double end_time, end_frame;
     double passive_time;
     std::vector<Motion> motions;
-    std::vector<Handle*> handles;
     std::vector<Obstacle> obstacles;
     std::vector<Morph> morphs;
+
+    std::vector<std::unique_ptr<Handle>> handles;
+    std::vector<std::unique_ptr<Measure>> measures;
+    std::vector<std::unique_ptr<Force>> forces;
+
     Vec3 gravity;
     Wind wind;
     double friction, obs_friction;

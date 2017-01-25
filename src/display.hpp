@@ -90,7 +90,7 @@ struct Pane {
 
     Pane(bool enable)
         : lat(-45)
-        , lon(45)
+        , lon(-45)
         , offset(0)
         , scale(0.2)
         , enabled(enable)

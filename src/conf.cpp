@@ -26,9 +26,11 @@
 
 #include "conf.hpp"
 
+#include "force.hpp"
 #include "geometry.hpp"
 #include "io.hpp"
 #include "magic.hpp"
+#include "measure.hpp"
 #include "mot_parser.hpp"
 #include "proxy.hpp"
 #include "referenceshape.hpp"
@@ -79,10 +81,10 @@ void parse(vector<T>& v, const Json::Value& json)
 
 void parse(Cloth&, const Json::Value&);
 void parse_motions(vector<Motion>&, const Json::Value&);
-void parse_handles(vector<Handle*>&, const Json::Value&,
-    const vector<Cloth>&, const vector<Motion>&);
-void parse_obstacles(vector<Obstacle>&, const Json::Value&,
-    const vector<Motion>&);
+void parse_handles(vector<unique_ptr<Handle>>&, const Json::Value&, const vector<Cloth>&, const vector<Motion>&);
+void parse_measures(vector<unique_ptr<Measure>>&, const Json::Value&, const vector<Cloth>&);
+void parse_forces(vector<unique_ptr<Force>>&, const Json::Value&, const vector<Cloth>&);
+void parse_obstacles(vector<Obstacle>&, const Json::Value&, const vector<Motion>&);
 void parse_morphs(vector<Morph>&, const Json::Value&, const vector<Cloth>&);
 void parse(Wind&, const Json::Value&);
 void parse(Magic&, const Json::Value&);
@@ -120,6 +122,8 @@ void load_json(const string& configFilename, Simulation& sim)
     parse(sim.cloths, json["cloths"]);
     parse_motions(sim.motions, json["motions"]);
     parse_handles(sim.handles, json["handles"], sim.cloths, sim.motions);
+    parse_measures(sim.measures, json["measures"], sim.cloths);
+    parse_forces(sim.forces, json["forces"], sim.cloths);
     parse_obstacles(sim.obstacles, json["obstacles"], sim.motions);
     parse_morphs(sim.morphs, json["morphs"], sim.cloths);
     parse(sim.gravity, json["gravity"], Vec3(0));
@@ -285,7 +289,8 @@ void parse(Cloth& cloth, const Json::Value& json)
     apply_velocity(cloth.mesh, velocity);
     parse(cloth.materials, json["materials"]);
     parse(cloth.remeshing, json["remeshing"]);
-    parse(cloth.const_volume, json["const_volume"], false);
+    parse(cloth.const_volume_DE, json["const_volume_DE"], false);
+    parse(cloth.const_volume_HD, json["const_volume_HD"], false);
 
     for (size_t i = 0; i < cloth.materials.size(); i++)
         if (cloth.materials[i]->use_dde) {
@@ -377,10 +382,12 @@ void parse(Material*& material, const Json::Value& json)
         material->density *= material->thickness; // area density
         parse(elastic_modulus, json["elastic_modulus"], 0.);
         parse(material->alt_poisson, json["poisson_ratio"], 0.);
+
         parse(material->toughness, json["toughness"], 0.);
         double bmult = 0;
         parse(bmult, json["fracture_bending_mult"], 0.);
         material->fracture_bend_thickness = material->thickness * bmult;
+
         compute_material(*material, elastic_modulus);
         material->alt_bending *= bending_mult;
         material->alt_stretching *= stretching_mult;
@@ -451,33 +458,33 @@ void parse(Motion::Point& mp, const Json::Value& json)
     }
 }
 
-void parse_handle(vector<Handle*>&, const Json::Value&,
+void parse_handle(vector<unique_ptr<Handle>>&, const Json::Value&,
     const vector<Cloth>&, const vector<Motion>&);
 
-void parse_handles(vector<Handle*>& hans, const Json::Value& jsons,
+void parse_handles(vector<unique_ptr<Handle>>& hans, const Json::Value& jsons,
     const vector<Cloth>& cloths, const vector<Motion>& motions)
 {
     for (int j = 0; j < (int)jsons.size(); j++)
         parse_handle(hans, jsons[j], cloths, motions);
 }
 
-void parse_node_handle(vector<Handle*>& hans, const Json::Value& json,
+void parse_node_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths,
     const vector<Motion>& motions);
 
-void parse_circle_handle(vector<Handle*>& hans, const Json::Value& json,
+void parse_circle_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths,
     const vector<Motion>& motions);
 
-void parse_soft_handle(vector<Handle*>& hans, const Json::Value& json,
+void parse_soft_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths,
     const vector<Motion>& motions);
 
-void parse_glue_handle(vector<Handle*>& hans, const Json::Value& json,
+void parse_glue_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths,
     const vector<Motion>& motions);
 
-void parse_handle(vector<Handle*>& hans, const Json::Value& json,
+void parse_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths, const vector<Motion>& motions)
 {
     string type;
@@ -506,46 +513,57 @@ void parse_handle(vector<Handle*>& hans, const Json::Value& json,
     }
 }
 
-void parse_node_handle(vector<Handle*>& hans, const Json::Value& json,
+void parse_node_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths,
     const vector<Motion>& motions)
 {
     int c, l, m;
+    bool axis_x, axis_y, axis_z;
     vector<int> ns;
     parse(c, json["cloth"], 0);
     parse(l, json["label"], -1);
     if (l == -1)
         parse(ns, json["nodes"]);
     parse(m, json["motion"], -1);
+    parse(axis_x, json["axis_x"], true);
+    parse(axis_y, json["axis_y"], true);
+    parse(axis_z, json["axis_z"], true);
     const Mesh& mesh = cloths[c].mesh;
     const Motion* motion = (m != -1) ? &motions[m] : NULL;
     if (l != -1) {
         for (int n = 0; n < (int)mesh.nodes.size(); n++) {
             if (mesh.nodes[n]->label != l)
                 continue;
-            NodeHandle* han = new NodeHandle;
+            auto han = make_unique<NodeHandle>();
             han->node = mesh.nodes[n];
             han->node->preserve = true;
             han->motion = motion;
-            hans.push_back(han);
+            han->axis[0] = axis_x;
+            han->axis[1] = axis_y;
+            han->axis[2] = axis_z;
+            hans.push_back(std::move(han));
         }
     }
     if (!ns.empty()) {
         for (int i = 0; i < (int)ns.size(); i++) {
-            NodeHandle* han = new NodeHandle;
+            auto han = make_unique<NodeHandle>();
             han->node = mesh.nodes[ns[i]];
             han->node->preserve = true;
             han->motion = motion;
-            hans.push_back(han);
+            han->axis[0] = axis_x;
+            han->axis[1] = axis_y;
+            han->axis[2] = axis_z;
+            hans.push_back(std::move(han));
         }
     }
 }
 
-void parse_circle_handle(vector<Handle*>& hans, const Json::Value& json,
+void parse_circle_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths,
     const vector<Motion>& motions)
 {
-    CircleHandle* han = new CircleHandle;
+    auto han = make_unique<CircleHandle>();
+
     int c, m;
     parse(c, json["cloth"], 0);
     han->mesh = (Mesh*)&cloths[c].mesh;
@@ -557,14 +575,14 @@ void parse_circle_handle(vector<Handle*>& hans, const Json::Value& json,
     parse(han->xc, json["center"]);
     parse(han->dx0, json["axis0"]);
     parse(han->dx1, json["axis1"]);
-    hans.push_back(han);
+    hans.push_back(std::move(han));
 }
 
-void parse_soft_handle(vector<Handle*>& hans, const Json::Value& json,
+void parse_soft_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths,
     const vector<Motion>& motions)
 {
-    SoftHandle* han = new SoftHandle;
+    auto han = make_unique<SoftHandle>();
     int c, m;
     parse(c, json["cloth"], 0);
     han->mesh = (Mesh*)&cloths[c].mesh;
@@ -572,14 +590,14 @@ void parse_soft_handle(vector<Handle*>& hans, const Json::Value& json,
     parse(han->radius, json["radius"]);
     parse(m, json["motion"], -1);
     han->motion = (m != -1) ? &motions[m] : NULL;
-    hans.push_back(han);
+    hans.push_back(std::move(han));
 }
 
-void parse_glue_handle(vector<Handle*>& hans, const Json::Value& json,
+void parse_glue_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths,
     const vector<Motion>& motions)
 {
-    GlueHandle* han = new GlueHandle;
+    auto han = make_unique<GlueHandle>();
     int c;
     vector<int> ns;
     parse(c, json["cloth"], 0);
@@ -591,7 +609,64 @@ void parse_glue_handle(vector<Handle*>& hans, const Json::Value& json,
     const Mesh& mesh = cloths[c].mesh;
     han->nodes[0] = (Node*)mesh.nodes[ns[0]];
     han->nodes[1] = (Node*)mesh.nodes[ns[1]];
-    hans.push_back(han);
+    hans.push_back(std::move(han));
+}
+
+void parse_measure(vector<unique_ptr<Measure>>& measures, const Json::Value& json,
+    const vector<Cloth>& cloths)
+{
+    int c;
+    vector<int> ns;
+
+    parse(c, json["cloth"], 0);
+    parse(ns, json["nodes"]);
+    const Mesh& mesh = cloths[c].mesh;
+    for (int n : ns) {
+        auto mea = make_unique<NodeMeasure>();
+        mea->node = mesh.nodes[n];
+        mea->node->preserve = true;
+        mea->x = mea->node->x;
+        cout << "Measure" << setw(6) << n << ": " << mea->node->x << endl;
+        measures.push_back(std::move(mea));
+    }
+}
+
+void parse_measures(vector<unique_ptr<Measure>>& measures, const Json::Value& json,
+    const vector<Cloth>& cloths)
+{
+    for (size_t i = 0; i < json.size(); ++i)
+        parse_measure(measures, json[i], cloths);
+    for (auto& measure : measures)
+        measure->print_info();
+}
+
+void parse_force(vector<unique_ptr<Force>>& forces,
+    const Json::Value& json, const vector<Cloth>& cloths)
+{
+    int c;
+    vector<int> ns;
+
+    parse(c, json["cloth"], 0);
+    parse(ns, json["nodes"]);
+    const Mesh& mesh = cloths[c].mesh;
+    for (int n : ns) {
+        auto force = make_unique<Force>();
+        force->node = mesh.nodes[n];
+        force->node->preserve = true;
+        parse(force->magnitude, json["magnitude"]);
+        parse(force->normal_direction, json["normal_direction"]);
+        if (!force->normal_direction) {
+            parse(force->direction, json["direction"]);
+        }
+        forces.push_back(std::move(force));
+    }
+}
+
+void parse_forces(vector<unique_ptr<Force>>& forces,
+    const Json::Value& json, const vector<Cloth>& cloths)
+{
+    for (size_t i = 0; i < json.size(); ++i)
+        parse_force(forces, json[i], cloths);
 }
 
 void parse_obstacle(Obstacle&, const Json::Value&, const vector<Motion>&);

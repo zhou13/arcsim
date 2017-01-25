@@ -31,6 +31,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 #include <zlib.h>
 
 // aa: if defined, AVX SIMD doubles will be used for vector math.
@@ -193,7 +194,7 @@ tpl std::ostream& operator<<(std::ostream& out, const VecnT& u)
 {
     out << "(";
     for (int i = 0; i < n; i++)
-        out << (i == 0 ? "" : ", ") << u[i];
+        out << (i == 0 ? "" : ", ") << std::setw(13) << u[i];
     out << ")";
     return out;
 }
@@ -520,7 +521,7 @@ tpl std::ostream& operator<<(std::ostream& out, const MatmnT& A)
     MatnmT At = transpose(A);
     out << "(" << std::endl;
     for (int i = 0; i < m; i++)
-        out << "    " << At.col(i) << (i + 1 == m ? "" : ",") << std::endl;
+        out << "    " << std::setw(13) << At.col(i) << (i + 1 == m ? "" : ",") << std::endl;
     out << ")";
     return out;
 }

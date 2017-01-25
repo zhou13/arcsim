@@ -31,7 +31,7 @@ using namespace std;
 
 static Vec3 directions[3] = { Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1) };
 
-void add_position_constraints(const Node* node, const Vec3& x, double stiff,
+void add_position_constraints(const Node* node, const Vec3& x, double stiff, bool* axis,
     vector<Constraint*>& cons);
 
 Transformation normalize(const Transformation& T)
@@ -53,7 +53,7 @@ vector<Constraint*> NodeHandle::get_constraints(double t)
     }
     Vec3 x = motion ? normalize(motion->pos(t)).apply(x0) : x0;
     vector<Constraint*> cons;
-    add_position_constraints(node, x, s * ::magic.handle_stiffness, cons);
+    add_position_constraints(node, x, s * ::magic.handle_stiffness, axis, cons);
     return cons;
 }
 
@@ -78,7 +78,7 @@ vector<Constraint*> CircleHandle::get_constraints(double t)
                 continue;
             l += norm(edge->n[1]->x - edge->n[0]->x);
         }
-        add_position_constraints(node, x, s * ::magic.handle_stiffness * l, cons);
+        add_position_constraints(node, x, s * ::magic.handle_stiffness * l, nullptr, cons);
     }
     return cons;
 }
@@ -145,10 +145,12 @@ vector<Node*> SoftHandle::get_nodes()
     return nodes;
 }
 
-void add_position_constraints(const Node* node, const Vec3& x, double stiff,
+void add_position_constraints(const Node* node, const Vec3& x, double stiff, bool* axis,
     vector<Constraint*>& cons)
 {
     for (int i = 0; i < 3; i++) {
+        if (axis && !axis[i])
+            continue;
         EqCon* con = new EqCon;
         con->node = (Node*)node;
         con->x = x;

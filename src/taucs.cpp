@@ -30,10 +30,9 @@
 #include "timer.hpp"
 #include <cstdlib>
 #include <iostream>
+
 using namespace std;
 using namespace alglib;
-
-vector<Node*>* debug_nodes = 0;
 
 extern "C" {
 #include "taucs.h"

@@ -732,13 +732,16 @@ void select_element(int x, int y, int button)
         cout << "aspect " << aspect(face) << endl;
         cout << "Sp_str " << face->Sp_str << endl;
         cout << "theta ideal " << face->adje[0]->theta_ideal << " " << face->adje[1]->theta_ideal << " " << face->adje[2]->theta_ideal << endl;
+        cout << endl;
     }
     if (vert) {
         Annotation::add(vert->node);
-        cout << vert << " index " << vert->index << endl;
+        cout << vert << " index " << vert->index << ", " << vert->node->index << endl;
         cout << "preserve " << vert->node->preserve << " flags " << vert->node->flag << " label "
              << vert->node->label << endl;
         cout << "sep " << separation_strength(vert->node, 0, true) << endl;
+        cout << "mass " << vert->node->m << endl;
+        cout << "area " << vert->node->a << endl;
         cout << "sizing " << vert->sizing << endl;
         cout << "x " << vert->node->x << endl;
         cout << "u " << vert->u << endl;
@@ -746,7 +749,7 @@ void select_element(int x, int y, int button)
         cout << "acc " << vert->node->acceleration << endl;
         for (size_t i = 0; i < vert->adjf.size(); i++)
             cout << vert->adjf[i] << " ";
-        cout << endl;
+        cout << endl << endl;
     }
     redisplay();
 }

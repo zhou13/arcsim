@@ -40,14 +40,11 @@ void save_obj(const Mesh& mesh, const std::string& filename);
 void save_objs(const std::vector<Mesh*>& meshes, const std::string& prefix);
 
 template <class T>
-void test_state(T& state, const std::string& prefix);
-template <class T>
 void save_state(T& state, const std::string& prefix);
 template <class T>
 bool load_state(T& state, const std::string& prefix);
 
-void save_transformation(const Transformation& tr,
-    const std::string& filename);
+void save_transformation(const Transformation& tr, const std::string& filename);
 
 // w_crop and h_crop specify a multiplicative crop window
 void save_screenshot(const std::string& filename);
@@ -63,8 +60,9 @@ std::string parent_path(const std::string& path);
 std::string obtain_subframe_id();
 void serialize_header(Serialize& s);
 
+// dump an object (state) for debug
 template <class T>
-void test_state(T& state, const std::string& prefix)
+void dump_state(T& state, const std::string& prefix)
 {
     // build consistent subframe indice
     std::string id = obtain_subframe_id();
