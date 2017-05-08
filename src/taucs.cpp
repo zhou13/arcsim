@@ -194,6 +194,7 @@ vector<Vec<C>> alglib_linear_solve_vec(const SpMat<Mat<C, C>>& A, const vector<V
 
 vector<double> taucs_linear_solve(const SpMat<double>& A, const vector<double>& b)
 {
+    TimerGuard tg("taucs_linear_solve");
     if (b.size() < 20)
         return alglib_linear_solve(A, b);
 

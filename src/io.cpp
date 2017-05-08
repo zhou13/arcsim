@@ -46,7 +46,7 @@ void get_valid_line(istream& in, string& line)
 {
     do
         getline(in, line);
-    while (in && (line.length() == 0 || line[0] == '#'));
+    while (in && (line.length() == 0));
 }
 
 void triangle_to_obj(const string& inname, const string& outname)
@@ -174,6 +174,24 @@ void load_obj(Mesh& mesh, const string& filename)
                     linestream >> S(i, j);
         } else if (keyword == "td") {
             linestream >> mesh.faces.back()->damage;
+        } else if (keyword.size() && keyword[0] == '#') {
+            string cmd;
+            linestream >> cmd;
+            vector<int> node_group;
+            if (cmd == "group") {
+                string group_name;
+                linestream >> group_name;
+                int vertex_index;
+                for (;;) {
+                    char ch = 0;
+                    linestream >> vertex_index >> ch;
+                    mesh.nodes[vertex_index]->preserve = true;
+                    node_group.push_back(vertex_index);
+                    if (ch != ',')
+                        break;
+                }
+                mesh.node_group[group_name] = std::move(node_group);
+            }
         }
     }
     mark_nodes_to_preserve(mesh);

@@ -1,5 +1,5 @@
 /*
-  Copyright ©2013 The Regents of the University of California
+  Copyright ©2017 The Regents of the University of California
   (Regents). All Rights Reserved. Permission to use, copy, modify, and
   distribute this software and its documentation for educational,
   research, and not-for-profit purposes, without fee and without a
@@ -24,30 +24,44 @@
   UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 */
 
+#include "solver.hpp"
 #include "timer.hpp"
-#include "simulation.hpp"
-#include <iostream>
 
-using namespace std;
-using namespace boost::posix_time;
+#include <Eigen/CholmodSupport>
+// #include <Eigen/SparseLU>
 
-Timer::Timer()
-    : last(0)
-    , total(0)
+std::vector<double> eigen_linear_solve(const SpMat<double>& A, const std::vector<double>& b)
 {
-    tick();
-}
+    TimerGuard tg("eigen_linear_solve");
+    typedef Eigen::Triplet<double> ET;
 
-void Timer::tick()
-{
-    then = microsec_clock::local_time();
-}
+    // assert the dimension is correct
+    size_t nn = A.n;
+    assert(A.n == A.m);
+    assert(nn == b.size());
 
-double Timer::tock()
-{
-    ptime now = microsec_clock::local_time();
-    last = (now - then).total_microseconds() * 1e-6;
-    total += last;
-    then = now;
-    return last;
+    Eigen::SparseMatrix<double> eA(nn, nn);
+    Eigen::Map<const Eigen::VectorXd> eb(b.data(), nn);
+    std::vector<ET> coeff;
+
+    // build the eigen matrix using triplet
+    for (size_t i = 0; i < nn; ++i) {
+        size_t m = A.rows[i].indices.size();
+        for (size_t jj = 0; jj < m; ++jj) {
+            size_t j = A.rows[i].indices[jj];
+            double entry = A.rows[i].entries[jj];
+            coeff.push_back(ET(i, j, entry));
+        }
+    }
+    eA.setFromTriplets(coeff.begin(), coeff.end());
+
+    Eigen::CholmodSimplicialLDLT<Eigen::SparseMatrix<double>> solver;
+    solver.compute(eA);
+
+    // Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    // solver.analyzePattern(eA);
+    // solver.factorize(eA);
+
+    Eigen::VectorXd x = solver.solve(eb);
+    return std::vector<double>(x.data(), x.data() + nn);
 }

@@ -1,7 +1,7 @@
 import math
 
-nTheta = 20
-nL = 20
+nTheta = 100
+nL = 100
 
 L = 600.
 R = 300.

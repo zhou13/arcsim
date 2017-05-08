@@ -31,6 +31,7 @@
 #include "vectors.hpp"
 #include <utility>
 #include <vector>
+#include <map>
 
 struct Serialize;
 
@@ -240,11 +241,14 @@ struct Mesh {
     Cloth* parent;
     CollisionProxy* proxy;
 
+    // These do *not* assume ownership, so no deletion on removal
     std::vector<Vert*> verts;
     std::vector<Node*> nodes;
     std::vector<Edge*> edges;
     std::vector<Face*> faces;
-    // These do *not* assume ownership, so no deletion on removal
+
+    std::map<std::string, std::vector<int>> node_group;
+
     void add(Vert* vert);
     void add(Node* node);
     void add(Edge* edge);

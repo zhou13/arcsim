@@ -252,6 +252,9 @@ void physics_step(Simulation& sim, const vector<Constraint*>& cons)
             fext, Jext, cons, sim.step_time);
         for (size_t n = 0; n < mesh.nodes.size(); n++)
             v[n] += mesh.nodes[n]->v;
+
+        // constant volume for fluid simulation
+        // not used in cloth simulation
         if (sim.cloths[c].const_volume_DE)
             v = divergence_elimination(mesh, v);
         else if (sim.cloths[c].const_volume_HD)
@@ -277,8 +280,10 @@ void physics_step(Simulation& sim, const vector<Constraint*>& cons)
 
 void step_mesh(Mesh& mesh, double dt)
 {
-    for (int n = 0; n < (int)mesh.nodes.size(); n++)
+    for (int n = 0; n < (int)mesh.nodes.size(); n++) {
         mesh.nodes[n]->x += mesh.nodes[n]->v * dt;
+        mesh.nodes[n]->v *= magic.velocity_damping;
+    }
 }
 
 void plasticity_step(Simulation& sim)
@@ -540,8 +545,6 @@ vector<Vec3> helmholtz_decomposition(const Mesh& mesh, const vector<Vec3>& u)
         for (auto& u0 : u)
             avg_u += u0;
         avg_u /= (double)u.size();
-        printf("    2249u before: (%.2f, %.2f, %.2f)\n", u[2249][0], u[2249][1], u[2249][2]);
-        printf("    avg u before: (%.2f, %.2f, %.2f)\n", avg_u[0], avg_u[1], avg_u[2]);
     }
 
     {
@@ -574,8 +577,6 @@ vector<Vec3> helmholtz_decomposition(const Mesh& mesh, const vector<Vec3>& u)
         for (auto& v0 : v)
             avg_v += v0;
         avg_v /= (double)v.size();
-        printf("    2249v after: (%.2f, %.2f, %.2f)\n", v[2249][0], v[2249][1], v[2249][2]);
-        printf("    avg v after: (%.2f, %.2f, %.2f)\n", avg_v[0], avg_v[1], avg_v[2]);
     }
     return v;
 }

@@ -30,6 +30,7 @@
 #include "collisionutil.hpp"
 #include "display.hpp"
 #include "io.hpp"
+#include "solver.hpp"
 #include "sparse.hpp"
 #include "taucs.hpp"
 
@@ -109,9 +110,10 @@ Mat3x3 material_model(const Face* face, const Mat3x3& G)
             Vec3(0, 0, 0));
         return sigma;
     } else {
+        // Saint Venant-Kirchloff model
         double A = mat->alt_stretching * weakening_mult;
-        Mat3x3 sigma = A * (1.0 - mat->alt_poisson) * G + Mat3x3(A * mat->alt_poisson * trace(G));
-        return sigma;
+        Mat3x3 S = A * (1.0 - mat->alt_poisson) * G + Mat3x3(A * mat->alt_poisson * trace(G));
+        return S;
     }
 }
 
@@ -120,9 +122,9 @@ double stretching_energy(const Face* face)
 {
     Mat3x3 F = deformation_gradient<WS>(face);
     Mat3x3 G = (F.t() * F - Mat3x3(1)) * 0.5;
-    Mat3x3 sigma = material_model(face, G);
+    Mat3x3 S = material_model(face, G);
 
-    return face->a * 0.5 * inner(sigma, G);
+    return face->a * 0.5 * inner(S, G);
 }
 
 template <Space s>
@@ -196,8 +198,12 @@ double bending_coeff(const Edge* edge, double theta)
     double a = face0->a + face1->a;
     double l = norm(edge->n[1]->x - edge->n[0]->x);
 
-    double ke0 = (face0->material->use_dde) ? bending_stiffness(edge, 0, face0->material->dde_bending, l, theta) : face0->material->alt_bending;
-    double ke1 = (face1->material->use_dde) ? bending_stiffness(edge, 1, face1->material->dde_bending, l, theta) : face1->material->alt_bending;
+    double ke0 = (face0->material->use_dde)
+        ? bending_stiffness(edge, 0, face0->material->dde_bending, l, theta)
+        : face0->material->alt_bending;
+    double ke1 = (face1->material->use_dde)
+        ? bending_stiffness(edge, 1, face1->material->dde_bending, l, theta)
+        : face1->material->alt_bending;
 
     double ke = min(ke0, ke1);
     double weakening = max(face0->material->weakening, face1->material->weakening);
@@ -221,8 +227,8 @@ double distance(const Vec3& x, const Vec3& a, const Vec3& b)
 {
     Vec3 e = b - a;
     Vec3 xp = e * dot(e, x - a) / dot(e, e);
-    // return norm((x-a)-xp);
-    return max(norm((x - a) - xp), 1e-3 * norm(e));
+    return norm((x - a) - xp);
+    // return max(norm((x - a) - xp), 1e-3 * norm(e));
 }
 
 Vec2 barycentric_weights(const Vec3& x, const Vec3& a, const Vec3& b)
@@ -239,22 +245,45 @@ pair<Mat12x12, Vec12> bending_force(const Edge* edge)
     if (!face0 || !face1)
         return make_pair(Mat12x12(0), Vec12(0));
     double theta = dihedral_angle<s>(edge);
+    Node* op0 = edge_opp_vert(edge, 0)->node;
+    Node* op1 = edge_opp_vert(edge, 1)->node;
     Vec3 x0 = pos<s>(edge->n[0]),
          x1 = pos<s>(edge->n[1]),
-         x2 = pos<s>(edge_opp_vert(edge, 0)->node),
-         x3 = pos<s>(edge_opp_vert(edge, 1)->node);
+         x2 = pos<s>(op0),
+         x3 = pos<s>(op1);
     double h0 = distance(x2, x0, x1), h1 = distance(x3, x0, x1);
     Vec3 n0 = normal<s>(face0), n1 = normal<s>(face1);
     Vec2 w_f0 = barycentric_weights(x2, x0, x1),
          w_f1 = barycentric_weights(x3, x0, x1);
-    Vec12 dtheta = mat_to_vec(Mat3x4(-(w_f0[0] * n0 / h0 + w_f1[0] * n1 / h1),
+    Vec12 u = mat_to_vec(Mat3x4(
+        -(w_f0[0] * n0 / h0 + w_f1[0] * n1 / h1),
         -(w_f0[1] * n0 / h0 + w_f1[1] * n1 / h1),
         n0 / h0,
         n1 / h1));
 
     double coeff = bending_coeff(edge, theta);
-    return make_pair(-coeff * outer(dtheta, dtheta) / 2.,
-        -coeff * (theta - edge->theta_ideal) * dtheta / 2.);
+    double dtheta = theta - edge->theta_ideal;
+
+    // if (op0->index == debug_node || op1->index == debug_node) {
+    // if (1) {
+    //     double l = norm(edge->n[1]->x - edge->n[0]->x);
+    //     double f = norm(n0 / h0 * coeff * dtheta / 2.);
+    //     printf("%04d/%04d l: %e  coeff: %e  norm(u): %e  dtheta: %e  f: %e\n",
+    //         op0->index, op1->index, l, coeff, norm(n0 / h0), dtheta, f);
+    // }
+
+    // // return make_pair(
+    // //     -coeff * outer(u, u) * abs(dtheta) * 1e5,
+    // //     -coeff * u * sgnsqr(dtheta) / 2. * 1e5);
+    // return make_pair(
+    //     -coeff * outer(u, u) / 2.  * 0.5,
+    //     -coeff * u * sgnsqr(dtheta) / 2. * 1e5);
+
+    // From "Simulation of Clothing with Folds and Wrinkles"
+
+    return make_pair(
+        -coeff * outer(u, u) / 2.,
+        -coeff * u * dtheta / 2.);
 }
 
 template <int m, int n>
@@ -362,10 +391,13 @@ void add_internal_forces(const vector<Face*>& faces, const vector<Edge*>& edges,
             add_subvec(dt * (F + (dt + damping) * J * vs), indices(n0, n1, n2), b);
         }
     }
+
+    double E = 0;
     for (size_t e = 0; e < edges.size(); e++) {
         const Edge* edge = edges[e];
         if (!edge->adjf[0] || !edge->adjf[1])
             continue;
+        E += bending_energy<s>(edge);
         pair<Mat12x12, Vec12> bendF = bending_force<s>(edge);
         const Node *n0 = edge->n[0],
                    *n1 = edge->n[1],
@@ -384,6 +416,7 @@ void add_internal_forces(const vector<Face*>& faces, const vector<Edge*>& edges,
             add_subvec(dt * (F + (dt + damping) * J * vs), indices(n0, n1, n2, n3), b);
         }
     }
+    printf("    bending energy: %3e\n", E);
 }
 
 double constraint_energy(const vector<Constraint*>& cons)
@@ -455,27 +488,63 @@ void add_friction_forces(const vector<Constraint*> cons,
     }
 }
 
+vector<Vec3> mat3x3_linear_solve(const SpMat<Mat3x3>& A, const vector<Vec3>& b)
+{
+    size_t nn = A.n;
+    assert(A.n == A.m);
+    assert(b.size() == nn);
+
+    SpMat<double> A_(nn * 3, nn * 3);
+    vector<double> b_(nn * 3);
+    for (size_t i = 0; i < nn; ++i) {
+        size_t m = A.rows[i].indices.size();
+        for (size_t jj = 0; jj < m; ++jj) {
+            size_t j = A.rows[i].indices[jj];
+            Mat3x3 entry = A.rows[i].entries[jj];
+            for (int x = 0; x < 3; ++x)
+                for (int y = 0; y < 3; ++y) {
+                    A_.rows[3 * i + x].indices.push_back(3 * j + y);
+                    A_.rows[3 * i + x].entries.push_back(entry(x, y));
+                }
+        }
+    }
+    for (size_t i = 0; i < nn; ++i)
+        for (int x = 0; x < 3; ++x)
+            b_[3 * i + x] = b[i][x];
+
+    vector<Vec3> dv(nn);
+    vector<double> dv_ = eigen_linear_solve(A_, b_);
+    for (size_t i = 0; i < nn; ++i)
+        for (int x = 0; x < 3; ++x)
+            dv[i][x] = dv_[3 * i + x];
+
+    return dv;
+}
+
 vector<Vec3> implicit_update(vector<Node*>& nodes,
     const vector<Edge*>& edges, const vector<Face*>& faces,
     const vector<Vec3>& fext, const vector<Mat3x3>& Jext,
     const vector<Constraint*>& cons, double dt)
 {
-    vector<Vert*>::iterator vert_it;
-    vector<Face*>::iterator face_it;
-    int nn = nodes.size();
+    size_t nn = nodes.size();
 
-    // M Dv/Dt = F (x + Dx) = F (x + Dt (v + Dv))
-    // Dv = Dt (M - Dt2 F)i F (x + Dt v)
-    // A = M - Dt2 F
-    // b = Dt F (x + Dt v)
+    // Expand Mx'' + Cx' + Kx = f using backward Euler we have
+    // 1/Dt [M + Dt C + Dt^2 (K - J)] Dv = F + (Dt J - C - Dt K) x' - K x
+    // where x''(t + Dt) = (x'(t + Dt) - x'(t)) / Dt = Dv / Dt
+    // For first step we have
+    // M Dv/Dt = F (x + Dt (v + Dv))
+    // A Dv = b
+    // A = M - Dt^2 DF/Dx
+    // b = Dt (F(x) + Dt DF/Dx v))
     SpMat<Mat3x3> A(nn, nn);
     vector<Vec3> b(nn, Vec3(0));
-    for (size_t n = 0; n < nodes.size(); n++) {
+
+    for (size_t n = 0; n < nn; n++) {
         A(n, n) += Mat3x3(nodes[n]->m) - dt * dt * Jext[n];
-        b[n] += dt * fext[n];
+        b[n] += dt * (fext[n] + dt * Jext[n] * nodes[n]->v);
     }
     consistency((vector<Vec3>&)fext, "fext");
-    consistency(b, "init");
+    consistency(b, "fext");
 
     add_internal_forces<WS>(faces, edges, A, b, dt);
     consistency(b, "internal forces");
@@ -486,8 +555,8 @@ vector<Vec3> implicit_update(vector<Node*>& nodes,
     add_friction_forces(cons, A, b, dt);
     consistency(b, "friction");
 
-    vector<Vec3> dv = taucs_linear_solve(A, b);
-    consistency(dv, "taucs");
+    vector<Vec3> dv = mat3x3_linear_solve(A, b);
+    consistency(dv, "linear");
 
     return dv;
 }
@@ -501,7 +570,7 @@ Vec3 wind_force(const Face* face, const Wind& wind)
     return wind.density * face->a * abs(vn) * vn * face->n + wind.drag * face->a * vt;
 }
 
-double signed_mesh_volume(const vector<Face*>& faces)
+double mesh_volume(const vector<Face*>& faces)
 {
     double volume = 0;
     for (auto& f : faces) {
@@ -539,21 +608,6 @@ void add_external_forces(const vector<Node*>& nodes, const vector<Face*>& faces,
         auto dir = f->normal_direction ? node->n : f->direction;
         fext[node->index] += dir * f->magnitude;
     }
-
-#if 0
-    // volumn pressure hack by zyc@berkeley.edu
-    // TODO compute Jext
-    double volume = abs(signed_mesh_volume(faces));
-    double sphere_volume = M_PI * 4 / 3;
-    printf("  vol: %.3f\n  ref vol: %.3f\n", volume, sphere_volume);
-    // double volume_delta = sphere_volume - volume;
-    // double pressure = volume_delta / sphere_volume * 40;
-    // for (auto& face : faces) {
-    //     Vec3 force = pressure * face->a * face->n;
-    //     for (int v = 0; v < 3; v++)
-    //         fext[face->v[v]->node->index] += force / 3.;
-    // }
-#endif
 }
 
 void add_morph_forces(const Cloth& cloth, const Morph& morph, double t,

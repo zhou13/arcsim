@@ -646,7 +646,7 @@ void display_world()
     // Update Title
     glutSetWindow(Pane::world().parent);
     char title[1024];
-    sprintf(title, "%s frame %d time %.3f  debug: %s [scale %g]", outprefix.c_str(), sim.frame, sim.time,
+    sprintf(title, "ARCSim: %s frame %d time %.3f  debug: %s [scale %g]", outprefix.c_str(), sim.frame, sim.time,
         display_modes[display_mode].name.c_str(), display_modes[display_mode].scale);
     glutSetWindowTitle(title);
 }

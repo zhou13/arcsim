@@ -27,24 +27,21 @@
 #ifndef VECTORS_HPP
 #define VECTORS_HPP
 
+// aa: if defined, AVX SIMD doubles will be used for vector math.
+//#define _AVX
 #include "winport.hpp" // aa: windows bindings, etc
 
 #include <cmath>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <zlib.h>
 
-// aa: if defined, AVX SIMD doubles will be used for vector math.
-//#define _AVX
-
-// aa: force alignment for global new/delete operators (in all files that include this one)
-// aa: force alignment for global new/delete operators (in all files that include this one)
 #if defined(_WIN32)
 #define __align(sz) __declspec(align(sz))
 inline void* malloc_align(size_t size, size_t alignment = 32) { return _aligned_malloc(size, alignment); }
 inline void aligned_free(void* ptr) { _aligned_free(ptr); }
 #else
-// This is for Linux, Apple OS will require a separate treatment...
+// FIXME: This is for Linux, Apple OS will require a separate treatment...
 #define __align(sz) __attribute__((aligned(sz)))
 #include <assert.h>
 #include <stdlib.h>
@@ -238,9 +235,7 @@ tpl inline bool is_bullshit(const VecnT& v)
 }
 
 #if defined(_AVX)
-#if !defined(_WIN32)
 #include <x86intrin.h>
-#endif
 template <>
 inline Vec<3, double> operator+<3, double>(const Vec<3, double>& u, const Vec<3, double>& v)
 {
@@ -315,10 +310,6 @@ typedef Vec<3> Vec3;
 #define VecmT Vec<m, T>
 #define VecnT Vec<n, T>
 
-//aa: transposed matrix functionality
-template <int m, int n, typename T = double>
-class MatTransposed;
-
 template <int m, int n, typename T = double>
 class Mat {
 private:
@@ -358,10 +349,7 @@ public:
         c[1] = y;
         c[2] = z;
         c[3] = w;
-
     }
-    //aa:    static Mat rows (VecnT x, VecnT y) {return Mat<n,2,T>(x,y).t();}
-    //aa:    static Mat rows (VecnT x, VecnT y, VecnT z) {return Mat<n,3,T>(x,y,z).t();}
     static Mat rows(VecnT x, VecnT y)
     {
         Mat<2, n, T> M;
@@ -411,7 +399,6 @@ public:
     inline VecmT& col(int j) { return c[j]; }
     inline const VecmT& col(int j) const { return c[j]; }
     MatnmT t() const { return transpose(*this); }
-    // const MatTransposed<m,n,T>& t () const {return reinterpret_cast<const MatTransposed<m,n,T>&>(*this);}
     MatmnT inv() const { return inverse(*this); }
 };
 tpl MatmnT operator+(const MatmnT& A) { return A; }
@@ -595,62 +582,6 @@ template <int m, int n>
 SVD<m, n> singular_value_decomposition(const Mat<m, n>& A);
 template <>
 SVD<3, 2> singular_value_decomposition<3, 2>(const Mat<3, 2>& A);
-
-template <int m, int n, int o, typename T>
-Mat<m, o, T> operator*(const Mat<m, n, T>& A, const MatTransposed<o, n, T>& B);
-template <int m, int n, typename T>
-Vec<n, T> operator*(const MatTransposed<m, n, T>& A, const Vec<m, T>& u);
-template <int m, int n, int o, typename T>
-Mat<m, o, T> operator*(const MatTransposed<n, m, T>& A, const Mat<n, o, T>& B);
-
-//aa: transposed matrix functionality
-template <int m, int n, typename T>
-class MatTransposed : protected Mat<m, n, T> {
-    friend Vec<n, T> operator*<>(const MatTransposed<m, n, T>& A, const Vec<m, T>& u);
-    template <int m1, int n1, int o, typename T1>
-    friend Mat<m1, o, T1> operator*(const Mat<m1, n1, T1>& A, const MatTransposed<o, n1, T1>& B);
-    template <int m1, int n1, int o, typename T1>
-    friend Mat<m1, o, T1> operator*(const MatTransposed<n1, m1, T1>& A, const Mat<n1, o, T1>& B);
-
-public:
-    const Mat<m, n, T>& t() const { return static_cast<const Mat<m, n, T>&>(*this); }
-};
-
-template <int m, int n, typename T>
-Vec<n, T> operator*(const MatTransposed<m, n, T>& A, const Vec<m, T>& u)
-{
-    Vec<n, T> v;
-    for (int j = 0; j < n; j++)
-        v[j] = dot(A.col(j), u);
-    return v;
-}
-
-template <int m, int n, int o, typename T>
-Mat<m, o, T> operator*(const Mat<m, n, T>& A, const MatTransposed<o, n, T>& B)
-{
-    Mat<m, o, T> C;
-    for (int k = 0; k < o; k++) {
-        //C.col(k) = 0; //!!!
-        C.col(k) = A.col(0) * B.col(0)[k];
-        for (int i = 1; i < n; i++) {
-            C.col(k) += A.col(i) * B.col(i)[k];
-        }
-    }
-    return C;
-}
-
-template <int m, int n, int o, typename T>
-Mat<m, o, T> operator*(const MatTransposed<n, m, T>& A, const Mat<n, o, T>& B)
-{
-    Mat<m, o, T> C;
-    for (int k = 0; k < o; k++) {
-        for (int j = 0; j < m; j++)
-            C.col(k)[j] = dot(A.col(j), B.col(k)); //!!!
-    }
-    return C;
-}
-
-Eig<3> eigen3(const Mat3x3& B);
 
 #undef static_assert
 

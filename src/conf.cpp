@@ -513,48 +513,68 @@ void parse_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     }
 }
 
+void parse_nodes(vector<int>& ns, const Json::Value& json, const Mesh& mesh)
+{
+    int l;
+    string group_name;
+
+    parse(l, json["label"], -1);
+    parse(group_name, json["node_group"], string());
+
+    parse(ns, json["nodes"]);
+
+    if (group_name != "") {
+        auto iter = mesh.node_group.find(group_name);
+        if (iter == mesh.node_group.end()) {
+            cout << "cannot find node group " << group_name << endl;
+            exit(1);
+        }
+        ns = iter->second;
+    }
+    if (l != -1) {
+        for (size_t n = 0; n < mesh.nodes.size(); n++) {
+            if (mesh.nodes[n]->label == l)
+                ns.push_back(n);
+        }
+    }
+
+    for (size_t n = 0; n < ns.size(); ++n)
+        if (ns[n] < 0 || ns[n] >= (int)mesh.nodes.size()) {
+            cout << "invalid node index" << endl;
+            exit(1);
+        }
+}
+
 void parse_node_handle(vector<unique_ptr<Handle>>& hans, const Json::Value& json,
     const vector<Cloth>& cloths,
     const vector<Motion>& motions)
 {
-    int c, l, m;
+    int c, m;
     bool axis_x, axis_y, axis_z;
+    string group_name;
     vector<int> ns;
+
     parse(c, json["cloth"], 0);
-    parse(l, json["label"], -1);
-    if (l == -1)
-        parse(ns, json["nodes"]);
-    parse(m, json["motion"], -1);
-    parse(axis_x, json["axis_x"], true);
-    parse(axis_y, json["axis_y"], true);
-    parse(axis_z, json["axis_z"], true);
     const Mesh& mesh = cloths[c].mesh;
+
+    parse_nodes(ns, json, mesh);
+
+    parse(m, json["motion"], -1);
     const Motion* motion = (m != -1) ? &motions[m] : NULL;
-    if (l != -1) {
-        for (int n = 0; n < (int)mesh.nodes.size(); n++) {
-            if (mesh.nodes[n]->label != l)
-                continue;
-            auto han = make_unique<NodeHandle>();
-            han->node = mesh.nodes[n];
-            han->node->preserve = true;
-            han->motion = motion;
-            han->axis[0] = axis_x;
-            han->axis[1] = axis_y;
-            han->axis[2] = axis_z;
-            hans.push_back(std::move(han));
-        }
-    }
-    if (!ns.empty()) {
-        for (int i = 0; i < (int)ns.size(); i++) {
-            auto han = make_unique<NodeHandle>();
-            han->node = mesh.nodes[ns[i]];
-            han->node->preserve = true;
-            han->motion = motion;
-            han->axis[0] = axis_x;
-            han->axis[1] = axis_y;
-            han->axis[2] = axis_z;
-            hans.push_back(std::move(han));
-        }
+
+    parse(axis_x, json["lock_x"], true);
+    parse(axis_y, json["lock_y"], true);
+    parse(axis_z, json["lock_z"], true);
+
+    for (int i = 0; i < (int)ns.size(); i++) {
+        auto han = make_unique<NodeHandle>();
+        han->node = mesh.nodes[ns[i]];
+        han->node->preserve = true;
+        han->motion = motion;
+        han->axis[0] = axis_x;
+        han->axis[1] = axis_y;
+        han->axis[2] = axis_z;
+        hans.push_back(std::move(han));
     }
 }
 
@@ -619,14 +639,15 @@ void parse_measure(vector<unique_ptr<Measure>>& measures, const Json::Value& jso
     vector<int> ns;
 
     parse(c, json["cloth"], 0);
-    parse(ns, json["nodes"]);
     const Mesh& mesh = cloths[c].mesh;
+
+    parse_nodes(ns, json, mesh);
+
     for (int n : ns) {
         auto mea = make_unique<NodeMeasure>();
         mea->node = mesh.nodes[n];
         mea->node->preserve = true;
         mea->x = mea->node->x;
-        cout << "Measure" << setw(6) << n << ": " << mea->node->x << endl;
         measures.push_back(std::move(mea));
     }
 }
@@ -647,8 +668,10 @@ void parse_force(vector<unique_ptr<Force>>& forces,
     vector<int> ns;
 
     parse(c, json["cloth"], 0);
-    parse(ns, json["nodes"]);
     const Mesh& mesh = cloths[c].mesh;
+
+    parse_nodes(ns, json, mesh);
+
     for (int n : ns) {
         auto force = make_unique<Force>();
         force->node = mesh.nodes[n];
@@ -658,6 +681,8 @@ void parse_force(vector<unique_ptr<Force>>& forces,
         if (!force->normal_direction) {
             parse(force->direction, json["direction"]);
         }
+
+        force->magnitude /= ns.size();
         forces.push_back(std::move(force));
     }
 }
@@ -790,6 +815,7 @@ void parse(Magic& magic, const Json::Value& json)
     PARSE_MAGIC(relax_method);
     PARSE_MAGIC(max_cracks);
     PARSE_MAGIC(enable_localopt);
+    PARSE_MAGIC(velocity_damping);
 #undef PARSE_MAGIC
 }
 

@@ -31,13 +31,33 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <cstdlib>
 #include <iostream>
+#include <string>
 #include <time.h>
 
 struct Timer {
     boost::posix_time::ptime then;
     double last, total;
     Timer();
-    void tick(), tock();
+    void tick();
+    double tock();
+};
+
+class TimerGuard {
+private:
+    Timer timer;
+    std::string function;
+
+public:
+    TimerGuard(const std::string& function)
+        : function(function)
+    {
+        timer.tick();
+    }
+
+    ~TimerGuard()
+    {
+        fprintf(stderr, "> Function %s() uses %.0fms\n", function.c_str(), 1e3 * timer.tock());
+    }
 };
 
 #endif

@@ -41,6 +41,7 @@ struct Magic {
     double separation_step_size;
     int relax_method, max_cracks;
     bool enable_localopt;
+    double velocity_damping;
     Magic()
         : fixed_high_res_mesh(false)
         , handle_stiffness(1e3)
@@ -56,6 +57,7 @@ struct Magic {
         , relax_method(0)
         , max_cracks(100)
         , enable_localopt(false)
+        , velocity_damping(1)
     {
     }
 };
